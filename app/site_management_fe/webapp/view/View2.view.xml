@@ -1,0 +1,81 @@
+<mvc:View
+    controllerName="com.trl.sitemanagementfe.controller.View2"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:layout="sap.ui.layout"
+    xmlns:core="sap.ui.core">
+
+    <Page showHeader="true" class="sapUiContentPadding sitePageBackground">
+
+        <!-- ========== SITE ID INPUT ========== -->
+        <HBox justifyContent="Start" class="sapUiSmallMarginBottom sapUiSmallMarginBegin">
+            <VBox width="300px">
+                <Label text="Site ID"/>
+                <Input id="topName" change=".onSiteIdChange" placeholder="Enter Site ID"/>
+            </VBox>
+        </HBox>
+
+        <!-- ========== HEADER ========== -->
+        <customHeader>
+            <Bar class="headerBarFix">
+                <contentLeft>
+                    <Image src="/images/logo.png" height="40px" class="siteLogo"/>
+                </contentLeft>
+                <contentMiddle>
+                    <HBox width="90%" justifyContent="Center">
+                        <Text text="PRODUCTION" class="siteHeaderTitle"/>
+                    </HBox>
+                </contentMiddle>
+            </Bar>
+        </customHeader>
+
+        <!-- ========== GENERAL INFORMATION ========== -->
+        <Panel headerText="General Information" class="whiteCard">
+            <layout:Grid defaultSpan="L4 M6 S12" hSpacing="1" vSpacing="1">
+
+                <VBox>
+                    <Label text="Customer"/>
+                    <Input value="{view>/siteMaster/customer_name}" editable="false"/>
+                </VBox>
+
+                <VBox>
+                    <Label text="Location"/>
+                    <Input value="{view>/siteMaster/location}" editable="false"/>
+                </VBox>
+
+                <VBox>
+                    <Label text="Runner ID"/>
+                    <Input value="{view>/siteMaster/runner_id}" editable="false"/>
+                </VBox>
+
+                <VBox>
+                    <Label text="Campaign No"/>
+                    <Input value="{view>/siteMaster/campaign_no}" editable="false"/>
+                </VBox>
+
+                <VBox>
+                    <Label text="Repair Status"/>
+                    <ComboBox selectedKey="{view>/siteMaster/repair_status}" width="100%">
+                        <core:Item key="MAJOR" text="Major"/>
+                        <core:Item key="MINOR" text="Minor"/>
+                    </ComboBox>
+                </VBox>
+
+                <VBox>
+                    <Label text="Minor Repair Status"/>
+                    <Input value="{view>/siteMaster/minor_repair_status}" type="Number"/>
+                </VBox>
+
+            </layout:Grid>
+        </Panel>
+
+        <!-- ========== DYNAMIC PRODUCTION LINES ========== -->
+        <VBox id="linesContainer" width="100%" class="sapUiSmallMarginTop"/>
+
+        <!-- ========== SAVE BUTTON ========== -->
+        <HBox justifyContent="End" class="actionBar" style="margin-top:1rem;">
+            <Button text="Save" type="Emphasized" press=".onSave"/>
+        </HBox>
+
+    </Page>
+</mvc:View>

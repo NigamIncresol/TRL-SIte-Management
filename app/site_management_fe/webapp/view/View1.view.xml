@@ -1,0 +1,174 @@
+<mvc:View
+    controllerName="com.trl.sitemanagementfe.controller.View1"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:layout="sap.ui.layout"
+    xmlns:core="sap.ui.core"
+>
+    <Page
+        showHeader="true"
+        class="sapUiContentPadding sitePageBackground"
+    >
+        <HBox
+            justifyContent="Start"
+            class="sapUiSmallMarginBottom sapUiSmallMarginBegin"
+        >
+            <VBox width="300px">
+                <Label text="Site ID" />
+                <Input
+                    id="topName"
+                    value="{/site_id}"
+                    editable="false"
+                />
+            </VBox>
+        </HBox>
+
+        <!-- HEADER -->
+        <customHeader>
+            <Bar class="headerBarFix">
+                <contentLeft>
+                    <Image
+                        id="imgLogo"
+                        src="/images/logo.png"
+                        height="40px"
+                        class="siteLogo"
+                    />
+                </contentLeft>
+
+                <contentMiddle>
+                    <HBox
+                        width="90%"
+                        justifyContent="Center"
+                    >
+                        <Text
+                            id="txtTitle"
+                            text="SITE MANAGEMENT"
+                            class="siteHeaderTitle"
+                        />
+                    </HBox>
+                </contentMiddle>
+            </Bar>
+        </customHeader>
+
+        <!-- GENERAL INFORMATION -->
+        <Panel
+            headerText="General Information"
+            class="whiteCard"
+        >
+            <layout:Grid defaultSpan="L4 M6 S12">
+                <VBox>
+                    <Label text="Customer" />
+                    <ComboBox
+                        id="customer"
+                        selectedKey="{/customer}"
+                         width="100%" 
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Location" />
+                    <ComboBox
+                        id="location"
+                        selectedKey="{/location}"
+                          width="100%" 
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Runner ID" />
+                    <Input
+                        id="runnerId"
+                        value="{/runnerId}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Campaign No" />
+                    <Input
+                        id="campaign"
+                        value="{/campaignNo}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Repair Status" />
+                    <ComboBox
+                        id="repairStatus"
+                        selectedKey="{/repairStatus}"
+                        selectionChange="onRepairStatusChange"
+                         width="100%" 
+                    >
+                        <items>
+                            <core:Item
+                                key="major"
+                                text="Major"
+                            />
+                            <core:Item
+                                key="minor"
+                                text="Minor"
+                            />
+                        </items>
+                    </ComboBox>
+                </VBox>
+
+                <VBox>
+                    <Label text="Minor Repair Status" />
+                    <Input
+                        id="minorRepairStatus"
+                        value="{/minorRepairStatus}"
+                        type="Number"
+                    />
+                </VBox>
+                <VBox>
+                    <Label text="No of House / Production Line" />
+                    <Input
+                        id="lineCount"
+                        type="Number"
+                        value="{/lineCount}"
+                        change="onLineCountChange"
+                    />
+                </VBox>
+            </layout:Grid>
+
+            <HBox
+                justifyContent="End"
+                class="sapUiSmallMarginTop"
+            >
+                <!-- <Button
+                    id="btnCreate"
+                    text="Create"
+                    type="Emphasized"
+                    press="onCreateCampaign"
+                /> -->
+                <!-- <Button
+                    id="btnStopCampaign"
+                    text="Stop Campaign"
+                    type="Reject"
+                    class="sapUiTinyMarginBegin"
+                    press="onStopCampaign"
+                /> -->
+            </HBox>
+        </Panel>
+
+        <!-- DYNAMIC LINES -->
+        <VBox
+            id="linesContainer"
+            width="100%"
+        />
+
+        <!-- FOOTER -->
+        <HBox
+            justifyContent="End"
+            class="actionBar"
+        >
+            <Button
+                id="btnSave"
+                text="Save"
+                type="Success"
+                press="onSave"
+            />
+        </HBox>
+    </Page>
+</mvc:View>

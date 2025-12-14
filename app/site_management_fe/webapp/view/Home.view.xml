@@ -1,0 +1,63 @@
+<mvc:View
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:m="sap.m"
+    xmlns:core="sap.ui.core"
+    controllerName="com.trl.sitemanagementfe.controller.Home"
+    displayBlock="true"
+>
+    <m:Page
+        title=""
+        showHeader="true"
+    >
+        <!-- Tiles Row -->
+        <m:HBox
+            justifyContent="Start"
+            class="sapUiSmallMargin"
+        >
+            <!-- TILE 1: Configuration -->
+            <m:GenericTile
+                header="Master Configuration"
+                press=".onConfigurationPress"
+                class="sapUiTinyMargin card-tile"
+            >
+                <m:TileContent>
+                    <core:Icon
+                        src="sap-icon://key-user-settings"
+                        color="#3fb9ec"
+                        class="iconTile"
+                    />
+                </m:TileContent>
+            </m:GenericTile>
+
+            <!-- TILE 2: Production -->
+            <m:GenericTile
+                header="Production"
+                press=".onProductionPress"
+                class="sapUiTinyMargin card-tile"
+            >
+                <m:TileContent>
+                    <core:Icon
+                        src="sap-icon://factory"
+                        color="#3fb9ec"
+                        class="iconTile"
+                    />
+                </m:TileContent>
+            </m:GenericTile>
+
+            <!-- TILE 3: Temperature -->
+            <m:GenericTile
+                header="Temperature"
+                press=".onTemperaturePress"
+                class="sapUiTinyMargin card-tile"
+            >
+                <m:TileContent>
+                    <core:Icon
+                        src="sap-icon://temperature"
+                        color="#3fb9ec"
+                        class="iconTile"
+                    />
+                </m:TileContent>
+            </m:GenericTile>
+        </m:HBox>
+    </m:Page>
+</mvc:View>

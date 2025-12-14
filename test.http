@@ -1,0 +1,142 @@
+###############################################
+### CREATE SITE MASTER (DEEP INSERT ENABLED)
+###############################################
+POST http://localhost:4004/odata/v4/site-management/siteMaster
+Content-Type: application/json
+
+{
+  "site_id": "SITE-002",
+  "customer_name": "XYZ Steel",
+  "location": "Delhi",
+  "runner_id": "RUN-101",
+  "campaign_no": "CMP-10",
+  "repair_status": "Major",
+  "minor_repair_status": 2,
+  "no_of_production_line": 3,
+  "siteProductionLines": [
+    {
+      "line_name": "Line 1",
+      "no_of_spg_sensors": 4,
+      "no_of_mudgun_sensors": 2,
+      "sensors": [
+        { "sensor_type": "SPG", "reading": 55.5 },
+        { "sensor_type": "MUDGUN", "reading": 41.3 }
+      ]
+    },
+    {
+      "line_name": "Line 2",
+      "no_of_spg_sensors": 3,
+      "no_of_mudgun_sensors": 1,
+      "sensors": [
+        { "sensor_type": "SPG", "reading": 60.2 }
+      ]
+    }
+  ]
+}
+
+
+###############################################
+### GET ALL SITE MASTERS
+###############################################
+GET http://localhost:4004/odata/v4/site-management/siteMaster
+
+
+
+###############################################
+### GET SITE MASTER BY ID
+###############################################
+GET http://localhost:4004/odata/v4/site-management/siteMaster(ID='<SiteMasterUUID>')
+
+
+
+###############################################
+### CREATE PRODUCTION LINE (NORMAL INSERT)
+###############################################
+POST http://localhost:4004/odata/v4/site-management/siteProductionLine
+Content-Type: application/json
+
+{
+  "line_name": "Line A",
+  "no_of_spg_sensors": 2,
+  "no_of_mudgun_sensors": 1,
+  "site_ID": "<SiteMasterUUID>"
+}
+
+
+
+###############################################
+### CREATE SENSOR (NORMAL INSERT)
+###############################################
+POST http://localhost:4004/odata/v4/site-management/sensors
+Content-Type: application/json
+
+{
+  "sensor_type": "SPG",
+  "reading": 42.5,
+  "line_ID": "<ProductionLineUUID>",
+  "site_ID": "<SiteMasterUUID>"
+}
+
+
+
+###############################################
+### GET ALL PRODUCTION LINES
+###############################################
+GET http://localhost:4004/odata/v4/site-management/siteProductionLine
+
+
+
+###############################################
+### GET ALL SENSORS
+###############################################
+GET http://localhost:4004/odata/v4/site-management/sensors
+
+
+
+###############################################
+### EXPAND: SITE MASTER → PRODUCTION LINES → SENSORS
+###############################################
+GET http://localhost:4004/odata/v4/site-management/siteMaster?$expand=siteProductionLines($expand=sensors)
+
+
+
+###############################################
+### EXPAND: PRODUCTION LINE → SENSORS
+###############################################
+GET http://localhost:4004/odata/v4/site-management/siteProductionLine?$expand=sensors
+
+
+
+###############################################
+### EXPAND EVERYTHING
+###############################################
+GET http://localhost:4004/odata/v4/site-management/siteMaster?$expand=*,siteProductionLines($expand=*)
+
+
+###
+GET http://localhost:4004/odata/v4/site-management/siteMaster('7d98f0e0-1cb0-40bf-a9ef-0e51a9fb3de7')?$expand=siteProductionLines($expand=sensors)
+
+
+# ====================================================
+# Generate next Site ID
+# ====================================================
+###
+GET http://localhost:4004/odata/v4/site-management/generateSiteId
+Accept: application/json
+
+
+
+# ====================================================
+# Generate next Campaign No
+# ====================================================
+###
+GET http://localhost:4004/odata/v4/site-management/generateCampaignNo
+Accept: application/json
+
+###
+
+# ====================================================
+# Generate next Runner ID
+# ====================================================
+GET http://localhost:4004/odata/v4/site-management/generateRunnerId
+Accept: application/json
