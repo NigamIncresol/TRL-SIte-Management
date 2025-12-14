@@ -55,15 +55,16 @@
 
                 <VBox>
                     <Label text="Repair Status"/>
-                    <ComboBox selectedKey="{view>/siteMaster/repair_status}" width="100%">
+                    <!-- <ComboBox selectedKey="{view>/siteMaster/repair_status}" width="100%">
                         <core:Item key="MAJOR" text="Major"/>
                         <core:Item key="MINOR" text="Minor"/>
-                    </ComboBox>
+                    </ComboBox> -->
+                     <Input value="{view>/siteMaster/repair_status}" editable="false"/>
                 </VBox>
 
                 <VBox>
                     <Label text="Minor Repair Status"/>
-                    <Input value="{view>/siteMaster/minor_repair_status}" type="Number"/>
+                    <Input value="{view>/siteMaster/minor_repair_status}" type="Number" editable="false"/>
                 </VBox>
 
             </layout:Grid>
@@ -71,10 +72,28 @@
 
         <!-- ========== DYNAMIC PRODUCTION LINES ========== -->
         <VBox id="linesContainer" width="100%" class="sapUiSmallMarginTop"/>
+         <!-- ===== REMARKS PANEL ===== -->
+                <Panel headerText="Additional Info" class="whiteCard" expandable="false">
+
+                    <layout:Grid defaultSpan="L12 M12 S12" width="100%">
+
+                        <HBox width="100%" alignItems="Center">
+                            <VBox width="20%">
+                                <Label text="Remark"/>
+                            </VBox>
+                            <VBox width="80%">
+                                <Input width="100%" id="remark"/>
+                            </VBox>
+                        </HBox>
+
+                    </layout:Grid>
+
+                </Panel>
+
 
         <!-- ========== SAVE BUTTON ========== -->
         <HBox justifyContent="End" class="actionBar" style="margin-top:1rem;">
-            <Button text="Save" type="Emphasized" press=".onSave"/>
+            <Button text="Save" type="Success" press=".onSave"/>
         </HBox>
 
     </Page>

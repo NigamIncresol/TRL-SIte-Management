@@ -12,9 +12,9 @@ sap.ui.define([
             this._initModel();
             // this._initCampaignNo();
             this._loadDropdowns();
-            
+
         },
-          _generateIDs: async function () {
+        _generateIDs: async function () {
             const oModel = this.getView().getModel();
 
             try {
@@ -32,12 +32,12 @@ sap.ui.define([
                 });
                 oModel.setProperty("/campaignNo", campRes.value);
 
-                // Runner ID
-                const runRes = await $.ajax({
-                    url: "/odata/v4/site-management/generateRunnerId",
-                    method: "GET"
-                });
-                oModel.setProperty("/runnerId", runRes.value);
+                // // Runner ID
+                // const runRes = await $.ajax({
+                //     url: "/odata/v4/site-management/generateRunnerId",
+                //     method: "GET"
+                // });
+                // oModel.setProperty("/runnerId", runRes.value);
 
             } catch (err) {
                 MessageToast.show("Error generating IDs: " + err.responseText || err.statusText);
@@ -45,41 +45,46 @@ sap.ui.define([
         },
 
         onAfterRendering: async function () {
-             // Generate IDs from backend
+            // Reset all fields
+            this._initModel();  // resets JSONModel data
+            // Generate IDs from backend
             await this._generateIDs();
             const oModel = this.getOwnerComponent().getModel();
 
             console.log("DEFAULT MODEL =>", oModel);
             console.log("MODEL CLASS =>", oModel?.getMetadata()?.getName());
 
-            $.ajax({
-                url: "/odata/v4/site-management/siteMaster",
-                method: "GET",
-                success: res => console.log("response of site master", res),
-                error: err => console.log("error site master", err)
-            });
+            // $.ajax({
+            //     url: "/odata/v4/site-management/siteMaster",
+            //     method: "GET",
+            //     success: res => console.log("response of site master", res),
+            //     error: err => console.log("error site master", err)
+            // });
 
-            $.ajax({
-                url: "/odata/v4/site-management/siteProductionLine",
-                method: "GET",
-                success: res => console.log("response of site production line", res),
-                error: err => console.log("error site prod line", err)
-            });
+            // $.ajax({
+            //     url: "/odata/v4/site-management/siteProductionLine",
+            //     method: "GET",
+            //     success: res => console.log("response of site production line", res),
+            //     error: err => console.log("error site prod line", err)
+            // });
         },
 
         // ============================ MODEL INIT ===========================
         _initModel: function () {
             const data = {
+                site_id: "",
                 customer: "",
                 location: "",
                 runnerId: "",
                 campaignNo: "",
                 repairStatus: "",
+                minorRepairStatus: 0,
                 lineCount: 0,
                 lines: []
             };
             this.getView().setModel(new JSONModel(data));
-        },
+        }
+        ,
 
         _initCampaignNo: function () {
             const no = "CMP-" + Date.now();
@@ -248,7 +253,7 @@ sap.ui.define([
             for (let i = 0; i < count; i++) {
                 const input = new sap.m.Input({
                     width: "80px",
-                    placeholder: "SPG " + (i + 1),
+                    placeholder: "NAME " + (i + 1),
                     change: e => {
                         sensors[i] = e.getSource().getValue();
                         line.spgSensors = sensors;
@@ -277,7 +282,7 @@ sap.ui.define([
             for (let i = 0; i < count; i++) {
                 const input = new sap.m.Input({
                     width: "80px",
-                    placeholder: "MG " + (i + 1),
+                    placeholder: "NAME " + (i + 1),
                     change: e => {
                         sensors[i] = e.getSource().getValue();
                         line.mudgunSensors = sensors;
@@ -294,65 +299,67 @@ sap.ui.define([
 
         // ========================= SAVE ============================
         onSave: function () {
-    const oModel = this.getView().getModel();
-    const data = oModel.getData();
+            const oModel = this.getView().getModel();
+            const data = oModel.getData();
 
-    const payload = {
-        site_id: data.site_id || "SITE-" + Date.now(),
-        customer_name: data.customer,
-        location: data.location,
-        runner_id: data.runnerId,
-        campaign_no: data.campaignNo,
-        repair_status: data.repairStatus,
-        minor_repair_status: data.minorRepairStatus || 0, // <-- updated
-        no_of_production_line: data.lines.length,
-        siteProductionLines: []
-    };
+            const payload = {
+                site_id: data.site_id || "SITE-" + Date.now(),
+                customer_name: data.customer,
+                location: data.location,
+                runner_id: data.runnerId,
+                campaign_no: data.campaignNo,
+                repair_status: data.repairStatus,
+                minor_repair_status: data.minorRepairStatus || 0, // <-- updated
+                no_of_production_line: data.lines.length,
+                siteProductionLines: []
+            };
 
-    // Validate main fields
-    console.log("Site ID      :", this.byId("topName")?.getValue());
-    console.log("Customer     :", data.customer);
-    console.log("Location     :", data.location);
-    console.log("Runner ID    :", data.runnerId);
-    console.log("Campaign No  :", data.campaignNo);
-    console.log("Repair Status:", data.repairStatus);
-    console.log("Minor Repair :", data.minorRepairStatus); // <-- added
-    console.log("Line Count   :", data.lineCount);
-    console.log("Lines Array  :", data.lines);
+            // Validate main fields
+            console.log("Site ID      :", this.byId("topName")?.getValue());
+            console.log("Customer     :", data.customer);
+            console.log("Location     :", data.location);
+            console.log("Runner ID    :", data.runnerId);
+            console.log("Campaign No  :", data.campaignNo);
+            console.log("Repair Status:", data.repairStatus);
+            console.log("Minor Repair :", data.minorRepairStatus); // <-- added
+            console.log("Line Count   :", data.lineCount);
+            console.log("Lines Array  :", data.lines);
 
-    data.lines.forEach(line => {
+            data.lines.forEach(line => {
 
-        const lineEntry = {
-            line_name: line.name,
-            no_of_spg_sensors: line.spgCount,
-            no_of_mudgun_sensors: line.mudgunCount,
-            sensors: []
-        };
+                const lineEntry = {
+                    line_name: line.name,
+                    no_of_spg_sensors: line.spgCount,
+                    no_of_mudgun_sensors: line.mudgunCount,
+                    sensors: []
+                };
 
-        line.spgSensors.forEach(val => {
-            if (val)
-                lineEntry.sensors.push({ sensor_type: "SPG", reading: Number(val) });
-        });
+                line.spgSensors.forEach(val => {
+                    if (val)
+                        lineEntry.sensors.push({ sensor_type: "SPG", sensor_name: val });
+                });
 
-        line.mudgunSensors.forEach(val => {
-            if (val)
-                lineEntry.sensors.push({ sensor_type: "MUDGUN", reading: Number(val) });
-        });
+                line.mudgunSensors.forEach(val => {
+                    if (val)
+                        lineEntry.sensors.push({ sensor_type: "MUDGUN", sensor_name: val });
+                });
 
-        payload.siteProductionLines.push(lineEntry);
-    });
+                payload.siteProductionLines.push(lineEntry);
+            });
 
-    console.log("FINAL PAYLOAD:", payload);
+            console.log("FINAL PAYLOAD:", payload);
 
-    $.ajax({
-        url: "/odata/v4/site-management/siteMaster",
-        method: "POST",
-        contentType: "application/json",
-        data: JSON.stringify(payload),
-        success: () => MessageToast.show("Site Master saved successfully!"),
-        error: xhr => MessageToast.show("Error: " + (xhr.responseJSON?.error?.message || "Unknown Error"))
-    });
-},
+            $.ajax({
+                url: "/odata/v4/site-management/siteMaster",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload),
+                success: () => { MessageToast.show("Site Master saved successfully!");
+                    // this._initModel();
+                 },
+                error: xhr => MessageToast.show("Error: " + (xhr.responseJSON?.error?.message || "Unknown Error"))
+            });
+        },
 
 
         // ========================= RESET ============================

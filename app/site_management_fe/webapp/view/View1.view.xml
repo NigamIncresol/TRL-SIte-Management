@@ -42,7 +42,7 @@
                     >
                         <Text
                             id="txtTitle"
-                            text="SITE MANAGEMENT"
+                            text="SITE CONFIGURATION"
                             class="siteHeaderTitle"
                         />
                     </HBox>
@@ -79,7 +79,6 @@
                     <Input
                         id="runnerId"
                         value="{/runnerId}"
-                        editable="false"
                     />
                 </VBox>
 

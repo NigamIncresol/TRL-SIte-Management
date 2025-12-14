@@ -19,8 +19,8 @@ Content-Type: application/json
       "no_of_spg_sensors": 4,
       "no_of_mudgun_sensors": 2,
       "sensors": [
-        { "sensor_type": "SPG", "reading": 55.5 },
-        { "sensor_type": "MUDGUN", "reading": 41.3 }
+        { "sensor_type": "SPG", "reading": 55.5,"sensor_name":"s1" },
+        { "sensor_type": "MUDGUN", "reading": 41.3,"sensor_name":"s2"  }
       ]
     },
     {

@@ -9,6 +9,7 @@
         title=""
         showHeader="true"
     >
+        
         <!-- Tiles Row -->
         <m:HBox
             justifyContent="Start"
@@ -16,7 +17,7 @@
         >
             <!-- TILE 1: Configuration -->
             <m:GenericTile
-                header="Master Configuration"
+                header="Site Configuration"
                 press=".onConfigurationPress"
                 class="sapUiTinyMargin card-tile"
             >
