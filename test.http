@@ -5,7 +5,7 @@ POST http://localhost:4004/odata/v4/site-management/siteMaster
 Content-Type: application/json
 
 {
-  "site_id": "SITE-002",
+  "site_id": "SITE-1",
   "customer_name": "XYZ Steel",
   "location": "Delhi",
   "runner_id": "RUN-101",

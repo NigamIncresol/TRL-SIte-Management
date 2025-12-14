@@ -1,0 +1,126 @@
+<mvc:View
+    controllerName="com.trl.sitemanagementfe.controller.View3"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:layout="sap.ui.layout"
+    xmlns:core="sap.ui.core"
+>
+    <Page
+        showHeader="true"
+        class="sapUiContentPadding sitePageBackground"
+    >
+        <!-- ========== HEADER ========== -->
+        <customHeader>
+            <Bar class="headerBarFix">
+                <contentLeft>
+                    <Image
+                        src="/images/logo.png"
+                        height="40px"
+                        class="siteLogo"
+                    />
+                </contentLeft>
+                <contentMiddle>
+                    <HBox
+                        width="90%"
+                        justifyContent="Center"
+                    >
+                        <Text
+                            text="TEMPERATURE"
+                            class="siteHeaderTitle"
+                        />
+                    </HBox>
+                </contentMiddle>
+            </Bar>
+        </customHeader>
+
+        <!-- DATE / TIME / SHIFT ROW -->
+        <HBox
+            width="100%"
+            justifyContent="SpaceBetween"
+            class="sapUiSmallMarginBottom"
+            wrap="Wrap"
+        >
+            <VBox
+                width="300px"
+                justifyContent="Start"
+            >
+                <Label text="Site ID" />
+                <Input
+                    id="topName"
+                    change=".onSiteIdChange"
+                    placeholder="Enter Site ID"
+                />
+            </VBox>
+            <ToolbarSpacer />
+            <VBox justifyContent="End">
+                <Label text="SHIFT" />
+                <Input
+                    value="{formData>/shift}"
+                    editable="false"
+                />
+            </VBox>
+        </HBox>
+
+        <!-- GENERAL INFORMATION PANEL (READ-ONLY) -->
+        <Panel
+            headerText="General Information"
+            class="whiteCard"
+        >
+            <layout:Grid
+                defaultSpan="L3 M4 S12"
+                hSpacing="2"
+                vSpacing="1"
+            >
+                <VBox>
+                    <Label text="Runner ID" />
+                    <Input
+                        value="{formData>/runnerId}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Campaign No" />
+                    <Input
+                        value="{formData>/campaignNo}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Repair Status" />
+                    <Input
+                        value="{formData>/repairStatus}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Minor Repair Status" />
+                    <Input
+                        value="{formData>/minorRepairStatus}"
+                        editable="false"
+                    />
+                </VBox>
+            </layout:Grid>
+        </Panel>
+
+        <!-- DYNAMIC PRODUCTION LINES -->
+        <VBox
+            id="linesContainer"
+            class="sapUiMediumMargin"
+        />
+
+        <!-- FOOTER -->
+        <HBox
+            justifyContent="End"
+            class="actionBar sapUiMediumMarginTop"
+        >
+            <Button
+                text="Save"
+                type="Success"
+                press=".onSave"
+            />
+        </HBox>
+    </Page>
+</mvc:View>

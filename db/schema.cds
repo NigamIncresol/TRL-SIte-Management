@@ -1,12 +1,9 @@
-using {
-    cuid,
-    managed
-} from '@sap/cds/common';
+using { cuid, managed } from '@sap/cds/common';
 
 namespace trlmonitoring;
 
-entity SiteMaster : cuid, managed {
-    key site_id               : String(100);
+entity SiteMaster : managed {
+    key site_id               : String(100);    // Primary key
         customer_name         : String(100);
         location              : String(100);
         runner_id             : String(20);
@@ -31,7 +28,7 @@ entity SiteProductionLine : cuid, managed {
     remarks              : String(255);
 
     site                 : Association to one SiteMaster
-                               on site.ID = site_ID;
+                               on site.site_id = site_ID;
     site_ID              : UUID;
 
     sensors              : Composition of many Sensors
@@ -48,6 +45,6 @@ entity Sensors : cuid, managed {
     line_ID     : UUID;
 
     site        : Association to one SiteMaster
-                      on site.ID = site_ID;
+                      on site.site_id = site_ID;
     site_ID     : UUID;
 }

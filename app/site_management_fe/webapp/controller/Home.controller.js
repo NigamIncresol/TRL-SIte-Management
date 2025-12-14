@@ -24,6 +24,7 @@ sap.ui.define([
         },
 
         onTemperaturePress: function () {
+             this.getOwnerComponent().getRouter().navTo("RouteView3");
             MessageToast.show("Temperature tile clicked");
         }
 
