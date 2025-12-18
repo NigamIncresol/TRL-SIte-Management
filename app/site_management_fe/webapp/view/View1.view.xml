@@ -9,6 +9,19 @@
         showHeader="true"
         class="sapUiContentPadding sitePageBackground"
     >
+    <VBox width="300px" class="sapUiSmallMarginBottom sapUiSmallMarginBegin">
+    <Label text="Mode" />
+    <ComboBox
+        id="modeSelector"
+        selectionChange="onModeChange"
+        width="100%">
+        <items>
+            <core:Item key="create" text="Create New" />
+            <core:Item key="maintain" text="Maintain" />
+        </items>
+    </ComboBox>
+</VBox>
+
         <HBox
             justifyContent="Start"
             class="sapUiSmallMarginBottom sapUiSmallMarginBegin"
@@ -18,7 +31,9 @@
                 <Input
                     id="topName"
                     value="{/site_id}"
-                    editable="false"
+                    valueHelpIconSrc="sap-icon://value-help"
+                    showValueHelp="true"
+                    valueHelpRequest="onSiteIdValueHelp"
                 />
             </VBox>
         </HBox>
@@ -79,6 +94,7 @@
                     <Input
                         id="runnerId"
                         value="{/runnerId}"
+                        change="onRunnerIdChange"
                     />
                 </VBox>
 
@@ -118,6 +134,7 @@
                         id="minorRepairStatus"
                         value="{/minorRepairStatus}"
                         type="Number"
+                        change="onMinorRepairStatusChange"
                     />
                 </VBox>
                 <VBox>

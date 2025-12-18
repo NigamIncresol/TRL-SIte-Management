@@ -1,13 +1,14 @@
 sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/m/MessageToast",
+    "sap/m/MessageBox",
     "sap/ui/model/json/JSONModel",
     "sap/m/Label",
     "sap/m/Input",
     "sap/m/VBox",
     "sap/m/HBox",
     "sap/m/Panel"
-], function (Controller, MessageToast, JSONModel, Label, Input, VBox, HBox, Panel) {
+], function (Controller, MessageToast, MessageBox, JSONModel, Label, Input, VBox, HBox, Panel) {
     "use strict";
 
     return Controller.extend("com.trl.sitemanagementfe.controller.View3", {
@@ -34,6 +35,15 @@ sap.ui.define([
             }
         },
 
+        // Get current date in IST (yyyy-mm-dd)
+        getISTDate: function () {
+            const now = new Date();
+            const istOffsetMs = 5.5 * 60 * 60 * 1000;
+            return new Date(now.getTime() + istOffsetMs)
+                .toISOString()
+                .split("T")[0];
+        },
+
         // ==========================================
         // Fetch site data and render production lines
         // ==========================================
@@ -41,91 +51,124 @@ sap.ui.define([
             const siteId = oEvent.getSource().getValue().trim();
             if (!siteId) return;
 
-            const sServiceUrl = `/odata/v4/site-management/siteMaster?$filter=site_id eq '${siteId}'&$expand=siteProductionLines,sensors`;
+            const sDate = this.getISTDate();
+            const oShiftSelect = this.byId("shiftSelect");
+            const sShift = oShiftSelect.getSelectedKey() || "A"; // default A if nothing selected
 
-            fetch(sServiceUrl, { method: "GET", headers: { "Accept": "application/json" } })
+
+            const sServiceUrl =
+                `/odata/v4/site-management/siteMaster` +
+                `?$filter=site_id eq '${encodeURIComponent(siteId)}'` +
+                `&$expand=siteProductionLines(` +
+                `$expand=sensors(` +
+                `$expand=sensorReading(` +
+                `$filter=reading_date eq ${sDate} and shift_code eq '${sShift}'` +
+                `)` +
+                `)` +
+                `)`;
+
+            fetch(sServiceUrl, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            })
                 .then(resp => resp.ok ? resp.json() : Promise.reject("Site not found"))
                 .then(data => {
-                    if (!data.value || data.value.length === 0) throw new Error("Site not found");
+
+                    if (!data.value || data.value.length === 0) {
+                        throw new Error("Site not found");
+                    }
 
                     const oSite = data.value[0];
                     console.log("Fetched Site Data:", oSite);
 
-                    const oModel = this.getView().getModel("formData");
+                    const oFormModel = this.getView().getModel("formData");
 
-                    // Pre-fill general info
-                    oModel.setProperty("/runnerId", oSite.runner_id || "");
-                    oModel.setProperty("/campaignNo", oSite.campaign_no || "");
-                    oModel.setProperty("/repairStatus", oSite.repair_status || "");
-                    oModel.setProperty("/minorRepairStatus", oSite.minor_repair_status );
-                    oModel.setProperty("/productionLines", []); // Clear previous lines
+                    // Editable only if sensor stage NOT completed
+                    oFormModel.setProperty("/isSensorEditable", !oSite.sensorStageCompleted);
 
-                    // Get container for production lines
+                    // ===============================
+                    // Prefill General Info
+                    // ===============================
+                    oFormModel.setProperty("/siteId", oSite.site_id);
+                    oFormModel.setProperty("/runnerId", oSite.runner_id || "");
+                    oFormModel.setProperty("/campaignNo", oSite.campaign_no || "");
+                    oFormModel.setProperty("/repairStatus", oSite.repair_status || "");
+                    oFormModel.setProperty("/minorRepairStatus", oSite.minor_repair_status || 0);
+                    oFormModel.setProperty("/productionLines", []);
+
+                    // Clear old UI
                     const oLinesContainer = this.byId("linesContainer");
                     oLinesContainer.destroyItems();
 
-                    // Loop through each production line
+                    // Render Production Lines + Sensors
                     (oSite.siteProductionLines || []).forEach(line => {
+
                         const lineData = {
                             ID: line.ID,
                             line_name: line.line_name,
-                            sensors: [] // Will populate with sensors
+                            sensors: []
                         };
 
-                        // Create production line panel
-                        const oLinePanel = new Panel({
-                            headerText: "Production Line Name : " + line.line_name,
-                            expandable: false
+                        const oLinePanel = new sap.m.Panel({
+                            headerText: "Production Line : " + line.line_name,
+                            expandable: true,
+                            expanded: true
                         });
 
-                        // Grid to hold SGP / MUDGUN panels side by side
                         const oGrid = new sap.ui.layout.Grid({
                             defaultSpan: "L6 M6 S12",
                             hSpacing: 2,
                             width: "100%"
                         });
 
-                        // Create SGP Panel
-                        const oSGPPanel = new Panel({
-                            headerText: "SGP SENSOR",
+                        // SGP Panel
+                        const oSGPPanel = new sap.m.Panel({
+                            headerText: "SPG SENSOR",
                             class: "whiteCard",
                             width: "100%"
                         });
-                        const oSGPVBox = new VBox();
+                        const oSGPVBox = new sap.m.VBox();
                         oSGPPanel.addContent(oSGPVBox);
 
-                        // Create MUDGUN Panel
-                        const oMUDGUNPanel = new Panel({
+                        // MUDGUN Panel
+                        const oMUDGUNPanel = new sap.m.Panel({
                             headerText: "MUDGUN SENSOR",
                             class: "whiteCard",
                             width: "100%"
                         });
-                        const oMUDGUNVBox = new VBox();
+                        const oMUDGUNVBox = new sap.m.VBox();
                         oMUDGUNPanel.addContent(oMUDGUNVBox);
 
-                        // Filter sensors for this line
-                        const aLineSensors = (oSite.sensors || []).filter(s => s.line_ID === line.ID);
+                        // Render sensors inside the line
+                        (line.sensors || []).forEach(sensor => {
 
-                        // Render sensors dynamically
-                        aLineSensors.forEach(sensor => {
+                            // Check if reading already exists for this shift + date
+                            const oReading =
+                                sensor.sensorReading && sensor.sensorReading.length > 0
+                                    ? sensor.sensorReading[0]
+                                    : null;
+
                             const sensorData = {
-                                ID: sensor.ID,
+                                sensorId: sensor.ID,                 // Sensor master ID (for POST)
+                                readingId: oReading?.ID || null,     // SensorReading ID (for PATCH)
                                 sensor_name: sensor.sensor_name,
                                 sensor_type: sensor.sensor_type,
-                                reading: sensor.reading || ""
+                                reading: oReading?.reading ?? ""     // Prefill existing reading
                             };
+
                             lineData.sensors.push(sensorData);
 
-                            const oHBox = new HBox({
+                            const oHBox = new sap.m.HBox({
                                 justifyContent: "SpaceBetween",
                                 class: "sapUiSmallMarginBottom",
                                 items: [
-                                    new Label({ text: sensor.sensor_name }),
-                                    new Input({
+                                    new sap.m.Label({ text: sensor.sensor_name }).addStyleClass("sapUiTinyMarginTop"),
+                                    new sap.m.Input({
                                         type: "Number",
                                         width: "100px",
                                         placeholder: "Reading...",
                                         value: sensorData.reading,
+                                        editable: "{formData>/isSensorEditable}",
                                         liveChange: (oEvent) => {
                                             sensorData.reading = oEvent.getParameter("value");
                                         }
@@ -140,69 +183,137 @@ sap.ui.define([
                             }
                         });
 
-                        // Add SGP and MUDGUN panels to grid
                         oGrid.addContent(oSGPPanel);
                         oGrid.addContent(oMUDGUNPanel);
 
-                        // Add grid to production line panel
                         oLinePanel.addContent(oGrid);
                         oLinePanel.addStyleClass("sapUiSmallMarginBottom");
 
-                        // Add production line panel to UI
                         oLinesContainer.addItem(oLinePanel);
 
-                        // Add production line data to model
-                        oModel.getProperty("/productionLines").push(lineData);
-                        oModel.refresh();
+                        oFormModel.getProperty("/productionLines").push(lineData);
                     });
+
+                    oFormModel.refresh(true);
                 })
                 .catch(err => {
-                    MessageToast.show(err.message || err);
+                    sap.m.MessageToast.show(err.message || err);
                     this.byId("linesContainer").destroyItems();
                     this.getView().getModel("formData").setProperty("/productionLines", []);
                 });
         },
 
         // ==========================================
-        // Save: PATCH each sensor reading
+        // Save sensor readings (POST / PATCH)
         // ==========================================
         onSave: function () {
-            const oModel = this.getView().getModel("formData");
-            const siteData = oModel.getData();
 
-            if (!siteData.productionLines || siteData.productionLines.length === 0) {
-                MessageToast.show("No production lines or sensors to save!");
+            const oModel = this.getView().getModel("formData");
+
+            const campNo = oModel.getProperty("/campaignNo");
+
+            const siteData = oModel.getData();
+            const sDate = this.getISTDate();
+            const oShiftSelect = this.byId("shiftSelect");
+            const sShift = oShiftSelect.getSelectedKey() || "A"; // default A if nothing selected
+
+
+            if (!siteData.productionLines?.length) {
+                sap.m.MessageToast.show("No sensors to save");
                 return;
             }
 
             siteData.productionLines.forEach(line => {
-                if (!line.sensors) return;
 
-                line.sensors.forEach(sensor => {
-                    if (!sensor.ID) return;
+                (line.sensors || []).forEach(sensor => {
 
-                    const payload = { reading: sensor.reading };
+                    if (sensor.reading === "" || sensor.reading == null) return;
 
-                    fetch(`/odata/v4/site-management/sensors('${sensor.ID}')`, {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json"
-                        },
-                        body: JSON.stringify(payload)
-                    })
-                        .then(resp => {
-                            if (!resp.ok) throw new Error(`Failed to update sensor: ${sensor.sensor_name}`);
-                            console.log(`Sensor ${sensor.sensor_name} updated successfully:`, sensor.reading);
+                    // UPDATE (existing reading)
+                    if (sensor.readingId) {
+                        fetch(`/odata/v4/site-management/sensorReading('${sensor.readingId}')`, {
+                            method: "PATCH",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Accept": "application/json"
+                            },
+                            body: JSON.stringify({
+                                reading: Number(sensor.reading)
+                            })
                         })
-                        .catch(err => {
-                            console.error(err);
-                            MessageToast.show(err.message || `Error updating sensor ${sensor.sensor_name}`);
-                        });
+                            .catch(err => {
+                                console.error(err);
+                                sap.m.MessageToast.show("Update failed");
+                            });
+                    }
+                    // CREATE (new reading)
+                    else {
+                        fetch("/odata/v4/site-management/sensorReading", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Accept": "application/json"
+                            },
+                            body: JSON.stringify({
+                                reading_date: sDate,
+                                shift_code: sShift,
+                                reading: Number(sensor.reading),
+                                sensor_ID: sensor.sensorId ,
+                                campaign_no:campNo
+                            })
+                        })
+                            .catch(err => {
+                                console.error(err);
+                                sap.m.MessageToast.show("Create failed");
+                            });
+                    }
+
                 });
             });
 
-            MessageToast.show("Sensor readings are being saved!");
+            sap.m.MessageToast.show("Sensor readings saved successfully");
+        },
+
+        // ==========================================
+        // Submit Sensor Stage
+        // ==========================================
+        onSubmit: function () {
+            MessageBox.confirm(
+                "Confirm submission? Changes will not be allowed after this.",
+                {
+                    title: "Confirm Submission",
+                    actions: [sap.m.MessageBox.Action.YES, sap.m.MessageBox.Action.NO],
+                    emphasizedAction: sap.m.MessageBox.Action.YES,
+                    onClose: function (sAction) {
+                        if (sAction === sap.m.MessageBox.Action.YES) {
+                            this.markSensorStageCompleted();
+                        }
+                    }.bind(this)
+                }
+            );
+        },
+
+        markSensorStageCompleted: function () {
+            const sSiteId = this.byId("siteId").getValue();
+            const sUrl = `/odata/v4/site-management/siteMaster(site_id='${sSiteId}')`;
+
+            $.ajax({
+                url: sUrl,
+                method: "PATCH",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    sensorStageCompleted: true
+                }),
+                success: function () {
+                    sap.m.MessageToast.show("Sensor stage submitted successfully");
+                },
+                error: function (xhr) {
+                    sap.m.MessageBox.error(
+                        xhr.responseJSON?.error?.message || "Submission failed"
+                    );
+                    console.error(xhr);
+                }
+            });
         }
 
     });

@@ -5,11 +5,10 @@ POST http://localhost:4004/odata/v4/site-management/siteMaster
 Content-Type: application/json
 
 {
-  "site_id": "SITE-1",
-  "customer_name": "XYZ Steel",
+  "customer_name": "Steel",
   "location": "Delhi",
-  "runner_id": "RUN-101",
-  "campaign_no": "CMP-10",
+  "runner_id": "RUN-202",
+  "campaign_no": "CMP-101",
   "repair_status": "Major",
   "minor_repair_status": 2,
   "no_of_production_line": 3,
@@ -117,26 +116,61 @@ GET http://localhost:4004/odata/v4/site-management/siteMaster?$expand=*,siteProd
 GET http://localhost:4004/odata/v4/site-management/siteMaster('7d98f0e0-1cb0-40bf-a9ef-0e51a9fb3de7')?$expand=siteProductionLines($expand=sensors)
 
 
-# ====================================================
-# Generate next Site ID
-# ====================================================
-###
-GET http://localhost:4004/odata/v4/site-management/generateSiteId
+### Test getLastCampaignNo function
+GET http://localhost:4004/odata/v4/site-management/getLastCampaignNo(customer_name='Dolvi',location='Pune',runner_id='Furnace-A')
 Accept: application/json
 
 
+### Generate Campaign Number
+POST http://localhost:4004/odata/v4/site-management/generateCampaignNo
+Content-Type: application/json
 
-# ====================================================
-# Generate next Campaign No
-# ====================================================
-###
-GET http://localhost:4004/odata/v4/site-management/generateCampaignNo
+{
+  "customer_name": "Dolvi",
+  "location": "Pune",
+  "runner_id": "Furnace-A"
+}
+
+### Generate Site ID
+POST http://localhost:4004/odata/v4/site-management/generateSiteId
+Content-Type: application/json
+
+{
+  "customer_name": "Dolvi",
+  "location": "Pune",
+  "runner_id": "Furnace-A"
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+### 1️⃣ Create campaign – ID only (AUTO GENERATE CAMP-n)
+POST http://localhost:4004/odata/v4/site-management/Campaign
+Content-Type: application/json
+
+{}
+
+### Get Site with Production Lines and Sensors
+GET http://localhost:4004/odata/v4/site-management/siteMaster(site_id='SITE-TRL-PUN-RUN-001')?$expand=siteProductionLines($expand=sensors,dailyProductions)
 Accept: application/json
 
-###
 
-# ====================================================
-# Generate next Runner ID
-# ====================================================
-GET http://localhost:4004/odata/v4/site-management/generateRunnerId
+### Get Site with Lines, Sensors and DailyProduction (by date)
+GET http://localhost:4004/odata/v4/site-management/siteMaster(site_id='SITE-TRL-PUN-RUN-001')?$expand=siteProductionLines($expand=sensors,dailyProductions($filter=production_date eq 2025-12-15))
 Accept: application/json
+
+### Submit Daily Production (Finalize for a site & date)
+POST http://localhost:4004/odata/v4/site-management/submitDailyProduction
+Content-Type: application/json
+Accept: application/json
+
+{
+  "site_id": "SITE-TRL-CHE-RUN-001",
+  "date": "2025-12-16"
+}
+
+###
+POST http://localhost:4004/odata/v4/site-management/campaign
+Content-Type: application/json
+
+{
+}
+

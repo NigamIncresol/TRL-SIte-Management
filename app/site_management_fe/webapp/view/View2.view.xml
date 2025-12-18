@@ -3,15 +3,40 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m"
     xmlns:layout="sap.ui.layout"
-    xmlns:core="sap.ui.core">
-
-    <Page showHeader="true" class="sapUiContentPadding sitePageBackground">
-
+    xmlns:core="sap.ui.core"
+>
+    <Page
+        showHeader="true"
+        class="sapUiContentPadding sitePageBackground"
+    >
         <!-- ========== SITE ID INPUT ========== -->
-        <HBox justifyContent="Start" class="sapUiSmallMarginBottom sapUiSmallMarginBegin">
-            <VBox width="300px">
-                <Label text="Site ID"/>
-                <Input id="topName" change=".onSiteIdChange" placeholder="Enter Site ID"/>
+        <HBox
+            justifyContent="SpaceBetween"
+            class="sapUiSmallMarginBottom sapUiSmallMarginBegin"
+            width="100%"
+        >
+            <!-- Left: Site ID -->
+            <VBox width="35%">
+                <Label text="Site ID" />
+                <Input
+                    id="siteId"
+                    change="onSiteIdChange"
+                    placeholder="Enter Site ID"
+                />
+            </VBox>
+
+            <!-- Right: Date -->
+            <VBox
+                width="35%"
+                class="sapUiSmallMarginEnd"
+            >
+                <Label text="Date" />
+
+                <Input
+                    id="siteDate"
+                    editable="false"
+                    class="sapUiSmallMarginEnd"
+                />
             </VBox>
         </HBox>
 
@@ -19,82 +44,152 @@
         <customHeader>
             <Bar class="headerBarFix">
                 <contentLeft>
-                    <Image src="/images/logo.png" height="40px" class="siteLogo"/>
+                    <Image
+                        src="/images/logo.png"
+                        height="40px"
+                        class="siteLogo"
+                    />
                 </contentLeft>
                 <contentMiddle>
-                    <HBox width="90%" justifyContent="Center">
-                        <Text text="PRODUCTION" class="siteHeaderTitle"/>
+                    <HBox
+                        width="90%"
+                        justifyContent="Center"
+                    >
+                        <Text
+                            text="PRODUCTION"
+                            class="siteHeaderTitle"
+                        />
                     </HBox>
                 </contentMiddle>
             </Bar>
         </customHeader>
 
         <!-- ========== GENERAL INFORMATION ========== -->
-        <Panel headerText="General Information" class="whiteCard">
-            <layout:Grid defaultSpan="L4 M6 S12" hSpacing="1" vSpacing="1">
-
+        <Panel
+            headerText="General Information"
+            class="whiteCard"
+        >
+            <layout:Grid
+                defaultSpan="L4 M6 S12"
+                hSpacing="1"
+                vSpacing="1"
+            >
                 <VBox>
-                    <Label text="Customer"/>
-                    <Input value="{view>/siteMaster/customer_name}" editable="false"/>
+                    <Label text="Customer" />
+                    <Input
+                        value="{view>/siteMaster/customer_name}"
+                        editable="false"
+                    />
                 </VBox>
 
                 <VBox>
-                    <Label text="Location"/>
-                    <Input value="{view>/siteMaster/location}" editable="false"/>
+                    <Label text="Location" />
+                    <Input
+                        value="{view>/siteMaster/location}"
+                        editable="false"
+                    />
                 </VBox>
 
                 <VBox>
-                    <Label text="Runner ID"/>
-                    <Input value="{view>/siteMaster/runner_id}" editable="false"/>
+                    <Label text="Runner ID" />
+                    <Input
+                        value="{view>/siteMaster/runner_id}"
+                        editable="false"
+                    />
                 </VBox>
 
                 <VBox>
-                    <Label text="Campaign No"/>
-                    <Input value="{view>/siteMaster/campaign_no}" editable="false"/>
+                    <Label text="Campaign No" />
+                    <Input
+                        value="{view>/siteMaster/campaign_no}"
+                        editable="false"
+                    />
                 </VBox>
 
                 <VBox>
-                    <Label text="Repair Status"/>
+                    <Label text="Repair Status" />
                     <!-- <ComboBox selectedKey="{view>/siteMaster/repair_status}" width="100%">
                         <core:Item key="MAJOR" text="Major"/>
                         <core:Item key="MINOR" text="Minor"/>
                     </ComboBox> -->
-                     <Input value="{view>/siteMaster/repair_status}" editable="false"/>
+                    <Input
+                        value="{view>/siteMaster/repair_status}"
+                        editable="false"
+                    />
                 </VBox>
 
                 <VBox>
-                    <Label text="Minor Repair Status"/>
-                    <Input value="{view>/siteMaster/minor_repair_status}" type="Number" editable="false"/>
+                    <Label text="Minor Repair Status" />
+                    <Input
+                        value="{view>/siteMaster/minor_repair_status}"
+                        type="Number"
+                        editable="false"
+                    />
                 </VBox>
-
             </layout:Grid>
         </Panel>
 
         <!-- ========== DYNAMIC PRODUCTION LINES ========== -->
-        <VBox id="linesContainer" width="100%" class="sapUiSmallMarginTop"/>
-         <!-- ===== REMARKS PANEL ===== -->
-                <Panel headerText="Additional Info" class="whiteCard" expandable="false">
+        <VBox
+            id="linesContainer"
+            width="100%"
+            class="sapUiSmallMarginTop"
+        />
+        <!-- ===== REMARKS PANEL ===== -->
+        <Panel
+            headerText="Additional Info"
+            class="whiteCard"
+            expandable="false"
+        >
+            <layout:Grid
+                defaultSpan="L12 M12 S12"
+                width="100%"
+            >
+                <HBox
+                    width="100%"
+                    alignItems="Center"
+                >
+                    <VBox width="20%">
+                        <Label text="Remark" />
+                    </VBox>
+                    <VBox width="80%">
+                        <Input
+                            width="100%"
+                            id="remark"
+                            value="{view>/remark}"
+                            editable="{view>/isProductionEditable}"
+                        />
+                    </VBox>
+                </HBox>
+            </layout:Grid>
+        </Panel>
 
-                    <layout:Grid defaultSpan="L12 M12 S12" width="100%">
+        <!-- ========== ACTION BUTTONS ========== -->
+        <HBox
+            class="actionBar"
+            style="margin-top:1rem;"
+            justifyContent="SpaceBetween"
+        >
+            <!-- Left side -->
+            <Button
+                text="Submit"
+                type="Success"
+                press=".onSubmit"
+                class="sapUiTinyMarginBegin"
+                visible="{view>/isProductionEditable}"
+            />
 
-                        <HBox width="100%" alignItems="Center">
-                            <VBox width="20%">
-                                <Label text="Remark"/>
-                            </VBox>
-                            <VBox width="80%">
-                                <Input width="100%" id="remark"/>
-                            </VBox>
-                        </HBox>
+            <!-- Spacer pushes next content to right -->
+            <ToolbarSpacer />
 
-                    </layout:Grid>
-
-                </Panel>
-
-
-        <!-- ========== SAVE BUTTON ========== -->
-        <HBox justifyContent="End" class="actionBar" style="margin-top:1rem;">
-            <Button text="Save" type="Success" press=".onSave"/>
+            <!-- Right side -->
+            <Button
+                text="Save as Draft"
+                type="Emphasized"
+                press=".onSave"
+                class="sapUiTinyMarginBegin"
+                visible="{view>/isProductionEditable}"
+            />
         </HBox>
-
     </Page>
 </mvc:View>

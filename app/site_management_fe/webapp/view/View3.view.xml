@@ -46,7 +46,7 @@
             >
                 <Label text="Site ID" />
                 <Input
-                    id="topName"
+                    id="siteId"
                     change=".onSiteIdChange"
                     placeholder="Enter Site ID"
                 />
@@ -54,10 +54,27 @@
             <ToolbarSpacer />
             <VBox justifyContent="End">
                 <Label text="SHIFT" />
-                <Input
-                    value="{formData>/shift}"
-                    editable="false"
-                />
+                <Select
+                    selectedKey="{formData>/shift}"
+                    forceSelection="true"
+                    editable="true"
+                      id="shiftSelect"
+                >
+                    <items>
+                        <core:Item
+                            key="A"
+                            text="A"
+                        />
+                        <core:Item
+                            key="B"
+                            text="B"
+                        />
+                        <core:Item
+                            key="C"
+                            text="C"
+                        />
+                    </items>
+                </Select>
             </VBox>
         </HBox>
 
@@ -111,15 +128,31 @@
             class="sapUiMediumMargin"
         />
 
-        <!-- FOOTER -->
+        <!-- ========== ACTION BUTTONS ========== -->
         <HBox
-            justifyContent="End"
-            class="actionBar sapUiMediumMarginTop"
+            class="actionBar"
+            style="margin-top:1rem;"
+            justifyContent="SpaceBetween"
         >
+            <!-- Left side -->
             <Button
-                text="Save"
+                text="Submit"
                 type="Success"
+                press=".onSubmit"
+                class="sapUiTinyMarginBegin"
+                visible="{formData>/isSensorEditable}"
+            />
+
+            <!-- Spacer pushes next content to right -->
+            <ToolbarSpacer />
+
+            <!-- Right side -->
+            <Button
+                text="Save as Draft"
+                type="Emphasized"
                 press=".onSave"
+                class="sapUiTinyMarginBegin"
+                visible="{formData>/isSensorEditable}"
             />
         </HBox>
     </Page>

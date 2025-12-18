@@ -1,14 +1,43 @@
-using { trlmonitoring } from '../db/schema.cds';
+using {trlmonitoring} from '../db/schema';
 
 service siteManagementService {
+    entity siteMaster         as projection on trlmonitoring.SiteMaster;
 
-    entity siteMaster as projection on trlmonitoring.SiteMaster;
     entity siteProductionLine as projection on trlmonitoring.SiteProductionLine;
-    entity sensors as projection on trlmonitoring.Sensors;
 
-    // Functions to generate unique IDs
-    function generateSiteId() returns String;
-    function generateCampaignNo() returns String;
-    function generateRunnerId() returns String;
+    entity campaign           as projection on trlmonitoring.Campaign;
+
+    entity sensor             as projection on trlmonitoring.Sensor;
+
+    entity dailyProduction    as projection on trlmonitoring.DailyProduction;
+
+    entity sensorReading      as projection on trlmonitoring.SensorReading;
+
+
+    /* ================= ACTIONS / FUNCTIONS ================= */
+
+    action   generateSiteId(customer_name: String,
+                            location: String,
+                            runner_id: String)     returns {
+        site_id : String;
+    };
+
+    function getLastCampaignNo(customer_name: String,
+                               location: String,
+                               runner_id: String)  returns {
+        campaign_no         : String;
+        repair_status       : String;
+        minor_repair_status : Integer;
+        createdAt           : Timestamp;
+    };
+
+    action   generateCampaignNo(customer_name: String,
+                                location: String,
+                                runner_id: String) returns {
+        campaign_no : String;
+    };
+
+    action   submitDailyProduction(site_id: String,
+                                   date: Date);
 
 }
