@@ -51,7 +51,7 @@ entity DailyProduction : cuid, managed {
   erosion_data             : Integer;
   remarks                  : String(255);
   productionStageCompleted : Boolean;
-  campaign_no              :String(255);
+  campaign_no              : String(255);
 }
 
 entity Sensor : cuid, managed {
@@ -66,8 +66,8 @@ entity Sensor : cuid, managed {
 entity SensorReading : cuid, managed {
   reading_date         : Date;
   shift_code           : String(10); // A / B / C
-  reading              :Integer;
+  reading              : Integer;
   sensorStageCompleted : Boolean;
   sensor               : Association to Sensor;
-  campaign_no              :String(255);
+  campaign_no          : String(255);
 }

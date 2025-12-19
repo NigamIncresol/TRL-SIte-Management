@@ -34,7 +34,7 @@
         </customHeader>
 
         <!-- DATE / TIME / SHIFT ROW -->
-        <HBox
+        <!-- <HBox
             width="100%"
             justifyContent="SpaceBetween"
             class="sapUiSmallMarginBottom"
@@ -76,7 +76,91 @@
                     </items>
                 </Select>
             </VBox>
-        </HBox>
+        </HBox> -->
+
+        <Panel
+            headerText="Search"
+            class="whiteCard"
+            expandable="false"
+        >
+            <content>
+                <HBox
+                    width="100%"
+                    justifyContent="SpaceBetween"
+                    alignItems="End"
+                    wrap="Wrap"
+                >
+                    <!-- Site ID -->
+                    <VBox width="25%">
+                        <Label text="Site ID" required="true" />
+                        <Input
+                            id="siteId"
+                            placeholder="Enter Site ID"
+                            showValueHelp="true"
+                            valueHelpRequest="onSiteIdValueHelp"
+                        />
+                    </VBox>
+
+                    <!-- Production Line ID -->
+                    <VBox width="25%">
+                        <Label text="Production Line" required="true" />
+                        <Input
+                            id="ProductionLineId1"
+                            placeholder="Enter Production Line"
+                            showValueHelp="true"
+                            valueHelpRequest="onProdLineValueHelp"
+                        />
+                    </VBox>
+
+                    <!-- Date -->
+                    <VBox width="25%">
+                        <Label text="Date" required="true" />
+                        <DatePicker
+                            id="siteDate1"
+                            width="100%"
+                            valueFormat="yyyy-MM-dd"
+                            displayFormat="dd-MM-yyyy"
+                        />
+                    </VBox>
+
+                    <VBox justifyContent="End">
+                        <Label text="Shift" required="true"/>
+                        <Select
+                            selectedKey="{formData>/shift}"
+                            forceSelection="true"
+                            editable="true"
+                            id="shiftSelect"
+                        >
+                            <items>
+                                <core:Item
+                                    key="A"
+                                    text="A"
+                                />
+                                <core:Item
+                                    key="B"
+                                    text="B"
+                                />
+                                <core:Item
+                                    key="C"
+                                    text="C"
+                                />
+                            </items>
+                        </Select>
+                    </VBox>
+
+                    <!-- Find Button -->
+                    <VBox width="8%">
+                        <Label text=" " />
+                        <Button
+                            text="Find"
+                            type="Emphasized"
+                            width="100%"
+                            press="onFindPress"
+                        />
+                    </VBox>
+                </HBox>
+            </content>
+        </Panel>
 
         <!-- GENERAL INFORMATION PANEL (READ-ONLY) -->
         <Panel

@@ -30,6 +30,7 @@
                 <Label text="Site ID" />
                 <Input
                     id="topName"
+                    change="onSiteIdChange"
                     value="{/site_id}"
                     valueHelpIconSrc="sap-icon://value-help"
                     showValueHelp="true"
@@ -98,7 +99,7 @@
                     />
                 </VBox>
 
-                <VBox>
+                <!-- <VBox>
                     <Label text="Campaign No" />
                     <Input
                         id="campaign"
@@ -136,7 +137,7 @@
                         type="Number"
                         change="onMinorRepairStatusChange"
                     />
-                </VBox>
+                </VBox> -->
                 <VBox>
                     <Label text="No of House / Production Line" />
                     <Input

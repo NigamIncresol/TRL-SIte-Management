@@ -57,8 +57,6 @@ sap.ui.define([
                 this.byId("location").setEditable(true);
                 this.byId("runnerId").setEditable(true);
                 this.byId("lineCount").setEditable(true);
-                this.byId("repairStatus").setEditable(true);
-                this.byId("minorRepairStatus").setEditable(true);
                 this.byId("btnSave").setEnabled(true);
 
 
@@ -81,9 +79,32 @@ sap.ui.define([
             }
         },
 
-        /**
-         * Set all form fields non-editable except repairStatus and minorRepairStatus
-         */
+        _setFieldsEditable: function (bEditable) {
+            const fieldIds = [
+                "topName",
+                "customer",
+                "location",
+                "runnerId",
+                "campaign",
+                "repairStatus",
+                "minorRepairStatus",
+                "lineCount"
+            ];
+
+            fieldIds.forEach(id => {
+                const field = this.byId(id);
+                if (field) {
+                    field.setEditable(bEditable);
+                }
+            });
+            this.byId("btnSave").setEnabled(bEditable);
+
+            // Dynamic lines are handled separately if needed
+            this.byId("linesContainer").getItems().forEach(panel => {
+                panel.setEditable(bEditable); // optional for Panel wrapper
+            });
+        }
+        ,
         _setFormReadOnly: function () {
             const oView = this.getView();
 
@@ -94,15 +115,9 @@ sap.ui.define([
             this.byId("lineCount").setEditable(false);
             this.byId("topName").setEditable(true); // Site ID must remain editable for search
 
-            // Repair status fields remain editable
-            this.byId("repairStatus").setEditable(true);
-            this.byId("minorRepairStatus").setEditable(true);
-
         },
 
-        /**
-         * Make all dynamic lines non-editable (for Maintain mode)
-         */
+
         _setLinesReadOnly: function () {
             const container = this.byId("linesContainer");
             container.getItems().forEach(panel => {
@@ -153,125 +168,8 @@ sap.ui.define([
             }
         }
         ,
-        _setFieldsEditable: function (bEditable) {
-            const fieldIds = [
-                "topName",
-                "customer",
-                "location",
-                "runnerId",
-                "campaign",
-                "repairStatus",
-                "minorRepairStatus",
-                "lineCount"
-            ];
 
-            fieldIds.forEach(id => {
-                const field = this.byId(id);
-                if (field) {
-                    field.setEditable(bEditable);
-                }
-            });
-            this.byId("btnSave").setEnabled(bEditable);
 
-            // Dynamic lines are handled separately if needed
-            this.byId("linesContainer").getItems().forEach(panel => {
-                panel.setEditable(bEditable); // optional for Panel wrapper
-            });
-        }
-        ,
-        onSiteIdChange: function (oEvent) {
-            const sSiteId = oEvent.getSource().getValue().trim();
-            if (!sSiteId) return;
-
-            //reset on start
-            this._previousMinorRepairStatus = null;
-            this._oldStatus = null;
-            $.ajax({
-                url: `/odata/v4/site-management/siteMaster('${encodeURIComponent(sSiteId)}')`,
-                method: "GET",
-                success: res => {
-                    if (res) {
-                        // Populate form with site data
-                        const oModel = this.getView().getModel();
-                        oModel.setProperty("/site_id", res.site_id);
-                        oModel.setProperty("/customer", res.customer_name);
-                        oModel.setProperty("/location", res.location);
-                        oModel.setProperty("/runnerId", res.runner_id);
-                        oModel.setProperty("/campaignNo", res.campaign_no);
-                        oModel.setProperty("/repairStatus", res.repair_status);
-                        oModel.setProperty("/minorRepairStatus", res.minor_repair_status);
-                        oModel.setProperty("/lineCount", res.no_of_production_line);
-                        this._previousMinorRepairStatus = res.minor_repair_status;
-                        this._oldStatus = res.repair_status;
-
-                        //if major repair coming then make minor status non editable.
-                        if (res.repair_status == "major") {
-                            this.byId("minorRepairStatus").setEditable(false);
-                        }
-                        if (res.repair_status == "minor") {
-                            this.byId("minorRepairStatus").setEditable(true);
-                        }
-                        // Render lines as read-only
-                        this._renderLines(res.siteProductionLines, true);
-                    } else {
-                        MessageToast.show("Site not found.");
-                        this._clearForm(); // Clear form if site not found
-                    }
-                },
-                error: () => {
-                    MessageToast.show("Site not found.");
-                    this._clearForm(); // Clear form if site not found
-                }
-            });
-        }
-
-        , _renderLinesForMaintain: function () {
-            const oModel = this.getView().getModel();
-            const aLines = oModel.getProperty("/lines") || [];
-            const container = this.byId("linesContainer");
-
-            container.destroyItems();
-
-            aLines.forEach((line, index) => {
-                const panel = new sap.m.Panel({
-                    headerText: "House / Production Line - " + (index + 1),
-                    expandable: true,
-                    expanded: true
-                }).addStyleClass("whiteCard sapUiMediumMarginBottom");
-
-                const lineName = new sap.m.Input({
-                    value: line.name,
-                    editable: false
-                });
-
-                const spgInputs = (line.spgSensors || []).map((sensor, i) =>
-                    new sap.m.Input({ value: sensor, editable: false, width: "80px" })
-                );
-
-                const mudgunInputs = (line.mudgunSensors || []).map((sensor, i) =>
-                    new sap.m.Input({ value: sensor, editable: false, width: "80px" })
-                );
-
-                const spgBox = new sap.m.HBox({ items: spgInputs });
-                const mudgunBox = new sap.m.HBox({ items: mudgunInputs });
-
-                const layout = new sap.m.VBox({
-                    width: "100%",
-                    items: [
-                        new sap.m.Label({ text: "Line Name", design: "Bold" }),
-                        lineName,
-                        new sap.m.Label({ text: "SPG Sensors", design: "Bold" }),
-                        spgBox,
-                        new sap.m.Label({ text: "Mudgun Sensors", design: "Bold" }),
-                        mudgunBox
-                    ]
-                }).addStyleClass("sapUiSmallMargin");
-
-                panel.addContent(layout);
-                container.addItem(panel);
-            });
-        }
-        ,
         // ============================ MODEL INIT ===========================
         _initModel: function () {
             const data = {
@@ -279,11 +177,8 @@ sap.ui.define([
                 customer: "",
                 location: "",
                 runnerId: "",
-                campaignNo: "",
-                repairStatus: "",
-                minorRepairStatus: 0,
                 lineCount: 0,
-                lines: []
+                lines: []   // each line will now hold campaign & repair data
             };
             this.getView().setModel(new JSONModel(data));
         }
@@ -328,6 +223,144 @@ sap.ui.define([
                     text: "{locationModel>text}"
                 })
             });
+        }
+        ,
+        onSiteIdChange: function (oEvent) {
+            const sSiteId = oEvent.getSource().getValue().trim();
+            if (!sSiteId) return;
+
+            //reset on start
+            this._previousMinorRepairStatus = null;
+            this._oldStatus = null;
+            $.ajax({
+                url: `/odata/v4/site-management/siteMaster('${encodeURIComponent(sSiteId)}')?$expand=siteProductionLines($expand=sensors)`,
+
+                method: "GET",
+                success: res => {
+                    if (res) {
+                        console.log("recicied date responese", res)
+                        // Populate form with site data
+                        const oModel = this.getView().getModel();
+                        oModel.setProperty("/site_id", res.site_id);
+                        oModel.setProperty("/customer", res.customer_name);
+                        oModel.setProperty("/location", res.location);
+                        oModel.setProperty("/runnerId", res.runner_id);
+                        oModel.setProperty("/campaignNo", res.campaign_no);
+                        oModel.setProperty("/repairStatus", res.repair_status);
+                        oModel.setProperty("/minorRepairStatus", res.minor_repair_status);
+                        oModel.setProperty("/lineCount", res.no_of_production_line);
+                        this._previousMinorRepairStatus = res.minor_repair_status;
+                        this._oldStatus = res.repair_status;
+
+                        //if major repair coming then make minor status non editable.
+                        if (res.repair_status == "major") {
+                            this.byId("minorRepairStatus").setEditable(false);
+                        }
+                        if (res.repair_status == "minor") {
+                            this.byId("minorRepairStatus").setEditable(true);
+                        }
+                        // Render lines as read-only
+                        this._renderProductionLines(res.siteProductionLines, true);
+
+
+                    } else {
+                        MessageToast.show("Site not found.");
+                        this._clearForm(); // Clear form if site not found
+                    }
+                },
+                error: () => {
+                    MessageToast.show("Site not found.");
+                    this._clearForm(); // Clear form if site not found
+                }
+            });
+        }
+
+        ,
+        onSiteIdValueHelp: function () {
+            const oView = this.getView();
+
+            // Create dialog only once
+            if (!this._oSiteVHDialog) {
+                this._oSiteVHDialog = new sap.m.SelectDialog({
+                    title: "Select Site ID",
+
+                    liveChange: (oEvent) => {
+                        this._onSiteSearch(oEvent);
+                    },
+
+                    confirm: (oEvent) => {
+                        this._onSiteSelect(oEvent);
+                    },
+
+                    cancel: oEvent => {
+                        oEvent.getSource().close();
+                    }
+                    ,
+
+                    items: {
+                        path: "/sites",
+                        template: new sap.m.StandardListItem({
+                            title: "{site_id}",
+                            description: "{customer_name} - {location}"
+                        })
+                    }
+                });
+
+                oView.addDependent(this._oSiteVHDialog);
+            }
+
+            // Fetch SiteMaster data
+            $.ajax({
+                url: "/odata/v4/site-management/siteMaster",
+                method: "GET",
+                success: (res) => {
+                    const aSites = res?.value || [];
+
+                    const oModel = new sap.ui.model.json.JSONModel({
+                        sites: aSites
+                    });
+
+                    this._oSiteVHDialog.setModel(oModel);
+                    this._oSiteVHDialog.open();
+                },
+                error: (xhr) => {
+                    sap.m.MessageToast.show("Failed to load Site IDs");
+                    console.error(xhr);
+                }
+            });
+        },
+        _onSiteSearch: function (oEvent) {
+            const sValue = oEvent.getParameter("value");
+
+            const oFilter = new sap.ui.model.Filter(
+                "site_id",
+                sap.ui.model.FilterOperator.Contains,
+                sValue
+            );
+
+            oEvent.getSource().getBinding("items").filter([oFilter]);
+        },
+
+        _onSiteSelect: function (oEvent) {
+
+            const oDialog = oEvent.getSource();   // ✅ always the SelectDialog
+            const oItem = oEvent.getParameter("selectedItem");
+
+            if (!oItem) {
+                oDialog.close();
+                return;
+            }
+
+            const sSiteId = oItem.getTitle();
+            const oInput = this.byId("topName");
+
+            // Set Site ID
+            oInput.setValue(sSiteId);
+
+            // Fire change manually
+            oInput.fireChange({ value: sSiteId });
+
+            oDialog.close();   // ✅ SAFE
         }
         ,
         onRepairStatusChange: function (oEvent) {
@@ -531,111 +564,281 @@ sap.ui.define([
             });
         }
         ,
+        _patchCampaign: function (sSiteId, sCampId, sRepairStatus, iMinorRepairStatus) {
+
+            if (!sCampId) {
+                sap.m.MessageToast.show("Campaign ID is required");
+                return;
+            }
+
+            const payload = {
+                repair_status: sRepairStatus,
+                minor_repair_status: iMinorRepairStatus,
+                site_site_id: sSiteId
+            };
+
+            console.log("PATCH Campaign Payload:", payload);
+
+            $.ajax({
+                url: `/odata/v4/site-management/campaign(camp_no='${encodeURIComponent(sCampId)}')`,
+                method: "PATCH",
+                contentType: "application/json",
+                data: JSON.stringify(payload),
+
+                success: function () {
+                    // sap.m.MessageToast.show("Campaign updated successfully");
+                },
+
+                error: function (xhr) {
+                    sap.m.MessageToast.show(
+                        "Campaign update failed: " +
+                        (xhr.responseJSON?.error?.message || "Unknown Error")
+                    );
+                    console.error("Campaign PATCH Error:", xhr);
+                }
+            });
+        }
+        ,
+        _stopCampaignForLine: function (line) {
+
+            MessageBox.confirm(
+                "Do you want to stop this campaign?",
+                {
+                    onClose: action => {
+                        if (action !== MessageBox.Action.OK) return;
+
+                        $.ajax({
+                            url: `/odata/v4/site-management/campaign(camp_no='${encodeURIComponent(line.campaign_no)}')`,
+                            method: "PATCH",
+                            contentType: "application/json",
+                            data: JSON.stringify({
+                                repair_status: "stopped"
+                            }),
+                            success: () => {
+                                sap.m.MessageToast.show("Campaign stopped");
+                            },
+                            error: () => {
+                                sap.m.MessageToast.show("Failed to stop campaign");
+                            }
+                        });
+                    }
+                }
+            );
+        }
+        ,
 
         // ========================= DYNAMIC LINES ============================
         onLineCountChange: function (oEvent) {
 
-            let count = parseInt(oEvent.getParameter("value"), 10);
-            const container = this.byId("linesContainer");
-            const model = this.getView().getModel();
-
-            container.destroyItems();
-
+            const count = parseInt(oEvent.getParameter("value"), 10);
             if (isNaN(count) || count <= 0) {
-                model.setProperty("/lines", []);
+                this.byId("linesContainer").destroyItems();
+                this.getView().getModel().setProperty("/lines", []);
                 return;
             }
 
-            const aLines = [];
+            const emptyLines = [];
 
             for (let i = 0; i < count; i++) {
+                emptyLines.push({
+                    line_name: "",
+                    no_of_spg_sensors: 0,
+                    no_of_mudgun_sensors: 0,
+                    sensors: []
+                });
+            }
 
-                // Panel wrapper (you still use Panel)
+            this._renderProductionLines(emptyLines, false);
+        }
+        ,
+        _renderProductionLines: function (aLinesFromAPI, bReadOnly) {
+
+            const container = this.byId("linesContainer");
+            const oModel = this.getView().getModel();
+
+            container.destroyItems();
+
+            const aLinesModel = [];
+
+            aLinesFromAPI.forEach((line, index) => {
+
+                /* ================= PANEL ================= */
                 const panel = new sap.m.Panel({
-                    headerText: "House / Production Line - " + (i + 1),
+                    headerText: "House / Production Line - " + (index + 1),
                     expandable: true,
                     expanded: true
                 }).addStyleClass("whiteCard sapUiMediumMarginBottom");
 
-                // LINE NAME
+                /* ================= LINE NAME ================= */
                 const lineName = new sap.m.Input({
-                    placeholder: "Line Name",
-                    maxLength: 50,
-                    width: "50%",
-                    liveChange: oEvent => {
-                        let value = oEvent.getSource().getValue();
-                        // value = value.replace(/[^a-zA-Z\s]/g, "");
-                        oEvent.getSource().setValue(value);
-                        aLines[i].name = value;
+                    value: line.line_name || "",
+                    editable: !bReadOnly,
+                    liveChange: (oEvent) => {
+                        const value = oEvent.getParameter("value");
+                        oModel.setProperty(`/lines/${index}/line_name`, value);
                     }
                 });
 
-                // SPG COMPONENTS
+                /* ================= SPG ================= */
                 const spgCount = new sap.m.Input({
                     type: "Number",
-                    width: "150px",
-                    placeholder: "No of SPG Sensors",
-                    change: this._handleSpgChange.bind(this, i)
+                    value: line.no_of_spg_sensors || 0,
+                    editable: !bReadOnly,
+                    change: this._handleSpgChange.bind(this, index)
                 });
 
-                const spgBox = new sap.m.HBox({ wrap: "Wrap" })
-                    .addStyleClass("sapUiTinyMarginTop sapUiTinyMarginBottom");
+                const spgBox = new sap.m.HBox({ wrap: "Wrap" });
 
-                const spgSection = new sap.m.VBox({
-                    items: [
-                        new sap.m.Label({ text: "No of SPG Sensors", design: "Bold" }),
-                        spgCount,
-                        spgBox
-                    ]
-                }).addStyleClass("sapUiTinyMarginBottom");
-
-                // MUDGUN COMPONENTS
+                /* ================= MUDGUN ================= */
                 const mudgunCount = new sap.m.Input({
                     type: "Number",
-                    width: "150px",
-                    placeholder: "No of Mudgun Sensors",
-                    change: this._handleMudgunChange.bind(this, i)
+                    value: line.no_of_mudgun_sensors || 0,
+                    editable: !bReadOnly,
+                    change: this._handleMudgunChange.bind(this, index)
                 });
 
-                const mudgunBox = new sap.m.HBox({ wrap: "Wrap" })
-                    .addStyleClass("sapUiTinyMarginTop sapUiTinyMarginBottom");
+                const mudgunBox = new sap.m.HBox({ wrap: "Wrap" });
 
-                const mudgunSection = new sap.m.VBox({
-                    items: [
-                        new sap.m.Label({ text: "No of Mudgun Sensors", design: "Bold" }),
-                        mudgunCount,
-                        mudgunBox
+                /* ================= SENSORS ================= */
+                (line.sensors || []).forEach(sensor => {
+                    const input = new sap.m.Input({
+                        width: "80px",
+                        value: sensor.sensor_name,
+                        editable: false
+                    });
+
+                    sensor.sensor_type === "SPG"
+                        ? spgBox.addItem(input)
+                        : mudgunBox.addItem(input);
+                });
+
+                /* ================= LINE GRID ================= */
+                const lineGrid = new sap.ui.layout.Grid({
+                    defaultSpan: "L4 M6 S12",
+                    content: [
+
+                        new sap.m.VBox({
+                            items: [
+                                new sap.m.Label({ text: "Line Name", design: "Bold" }),
+                                lineName
+                            ]
+                        }),
+
+                        new sap.m.VBox({
+                            items: [
+                                new sap.m.Label({ text: "No of SPG Sensors", design: "Bold" }),
+                                spgCount,
+                                spgBox
+                            ]
+                        }),
+
+                        new sap.m.VBox({
+                            items: [
+                                new sap.m.Label({ text: "No of Mudgun Sensors", design: "Bold" }),
+                                mudgunCount,
+                                mudgunBox
+                            ]
+                        })
                     ]
-                }).addStyleClass("sapUiMediumMarginBottom");
+                });
 
-                // FINAL LAYOUT
-                const layout = new sap.m.VBox({
+                /* ================= REPAIR / CAMPAIGN ================= */
+
+                const campaignInput = new sap.m.Input({
+                    value: line.campaign_no || "",
                     width: "100%",
-                    items: [
-                        new sap.m.Label({ text: "Line Name", design: "Bold" }),
-                        lineName.addStyleClass("sapUiTinyMarginBottom"),
-                        spgSection,
-                        mudgunSection
-                    ]
-                }).addStyleClass("sapUiSmallMargin");
+                    editable: !bReadOnly   // campaign still follows mode
+                });
 
-                panel.addContent(layout);
+                const repairStatusCombo = new sap.m.ComboBox({
+                    selectedKey: line.repair_status || "",
+                    width: "100%",         // ✅ same width as campaign
+                    editable: true,        // ✅ ALWAYS editable
+                    items: [
+                        new sap.ui.core.Item({ key: "major", text: "Major" }),
+                        new sap.ui.core.Item({ key: "minor", text: "Minor" })
+                    ]
+                });
+
+                const minorRepairInput = new sap.m.Input({
+                    type: "Number",
+                    value: line.minor_repair_status || 0,
+                    width: "100%",         // ✅ same width
+                    editable: true         // ✅ ALWAYS editable
+                });
+
+
+                const stopCampaignBtn = new sap.m.Button({
+                    text: "Stop Campaign",
+                    type: "Reject",
+                    visible: bReadOnly, // only Maintain mode
+                    press: () => {
+                        this._stopCampaignForLine(line);
+                    }
+                });
+
+                const repairGrid = new sap.ui.layout.Grid({
+                    defaultSpan: "L4 M6 S12",
+                    content: [
+
+                        new sap.m.VBox({
+                            items: [
+                                new sap.m.Label({ text: "Campaign No", design: "Bold" }),
+                                campaignInput
+                            ]
+                        }),
+
+                        new sap.m.VBox({
+                            items: [
+                                new sap.m.Label({ text: "Repair Status", design: "Bold" }),
+                                repairStatusCombo
+                            ]
+                        }),
+
+                        new sap.m.VBox({
+                            items: [
+                                new sap.m.Label({ text: "Minor Repair Status", design: "Bold" }),
+                                minorRepairInput
+                            ]
+                        }),
+
+                        new sap.m.VBox({
+                            alignItems: "Start",
+                            justifyContent: "End",
+                            items: [stopCampaignBtn]
+                        })
+                    ]
+                }).addStyleClass("sapUiSmallMarginTop");
+
+                /* ================= FINAL LAYOUT ================= */
+                panel.addContent(
+                    new sap.m.VBox({
+                        items: [lineGrid, repairGrid]
+                    }).addStyleClass("sapUiSmallMargin")
+                );
+
                 container.addItem(panel);
 
-                aLines.push({
-                    name: "",
-                    spgCount: 0,
+                /* ================= MODEL ================= */
+                aLinesModel.push({
+                    line_name: line.line_name || "",
+                    spgCount: line.no_of_spg_sensors || 0,
+                    mudgunCount: line.no_of_mudgun_sensors || 0,
                     spgSensors: [],
-                    mudgunCount: 0,
                     mudgunSensors: [],
-                    spgBox: spgBox,
-                    mudgunBox: mudgunBox
+                    spgBox: spgBox,           // ✅ REQUIRED
+                    mudgunBox: mudgunBox,     // ✅ REQUIRED
+                    campaignNo: line.campaign_no || "",
+                    repairStatus: line.repair_status || "",
+                    minorRepairStatus: line.minor_repair_status || 0
                 });
-            }
 
-            model.setProperty("/lines", aLines);
-        },
+            });
 
+            oModel.setProperty("/lines", aLinesModel);
+        }
+
+        ,
         // ========================= SPG HANDLER ============================
         _handleSpgChange: function (lineIndex, oEvent) {
 
@@ -663,7 +866,8 @@ sap.ui.define([
             }
 
             line.spgCount = count;
-        },
+        }
+        ,
 
         // ========================= MUDGUN HANDLER ============================
         _handleMudgunChange: function (lineIndex, oEvent) {
@@ -694,6 +898,25 @@ sap.ui.define([
             line.mudgunCount = count;
         },
 
+        _generateCampaignNoForLine: function (lineObj, campaignInput) {
+            $.ajax({
+                url: "/odata/v4/site-management/campaign",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({}),
+
+                success: res => {
+                    lineObj.campaignNo = res.camp_no;
+                    campaignInput.setValue(res.camp_no);
+                },
+
+                error: () => {
+                    sap.m.MessageToast.show("Failed to generate Campaign No");
+                }
+            });
+        },
+
+
         // ========================= SAVE ============================
         onSave: function () {
             const oModel = this.getView().getModel();
@@ -715,7 +938,7 @@ sap.ui.define([
             // Prepare production lines
             data.lines.forEach(line => {
                 const lineEntry = {
-                    line_name: line.name,
+                    line_name: line.line_name,
                     no_of_spg_sensors: line.spgCount,
                     no_of_mudgun_sensors: line.mudgunCount,
                     sensors: []
@@ -784,45 +1007,7 @@ sap.ui.define([
                 });
             }
         }
-
         ,
-        _patchCampaign: function (sSiteId, sCampId, sRepairStatus, iMinorRepairStatus) {
-
-            if (!sCampId) {
-                sap.m.MessageToast.show("Campaign ID is required");
-                return;
-            }
-
-            const payload = {
-                repair_status: sRepairStatus,
-                minor_repair_status: iMinorRepairStatus,
-                site_site_id: sSiteId
-            };
-
-            console.log("PATCH Campaign Payload:", payload);
-
-            $.ajax({
-                url: `/odata/v4/site-management/campaign(camp_no='${encodeURIComponent(sCampId)}')`,
-                method: "PATCH",
-                contentType: "application/json",
-                data: JSON.stringify(payload),
-
-                success: function () {
-                    // sap.m.MessageToast.show("Campaign updated successfully");
-                },
-
-                error: function (xhr) {
-                    sap.m.MessageToast.show(
-                        "Campaign update failed: " +
-                        (xhr.responseJSON?.error?.message || "Unknown Error")
-                    );
-                    console.error("Campaign PATCH Error:", xhr);
-                }
-            });
-        }
-        ,
-
-
         // ========================= RESET ============================
         onReset: function () {
             MessageBox.confirm("Reset all fields?", {
@@ -834,103 +1019,7 @@ sap.ui.define([
                     }
                 }
             });
-        },
-       onSiteIdValueHelp: function () {
-    const oView = this.getView();
-
-    // Create dialog only once
-    if (!this._oSiteVHDialog) {
-        this._oSiteVHDialog = new sap.m.SelectDialog({
-            title: "Select Site ID",
-
-            liveChange: (oEvent) => {
-                this._onSiteSearch(oEvent);
-            },
-
-            confirm: (oEvent) => {
-                this._onSiteSelect(oEvent);
-            },
-
-            cancel: () => {
-                this._oSiteVHDialog.close();
-            },
-
-            items: {
-                path: "/sites",
-                template: new sap.m.StandardListItem({
-                    title: "{site_id}",
-                    description: "{customer_name} - {location}"
-                })
-            }
-        });
-
-        oView.addDependent(this._oSiteVHDialog);
-    }
-
-    // Fetch SiteMaster data
-    $.ajax({
-        url: "/odata/v4/site-management/siteMaster",
-        method: "GET",
-        success: (res) => {
-            const aSites = res?.value || [];
-
-            const oModel = new sap.ui.model.json.JSONModel({
-                sites: aSites
-            });
-
-            this._oSiteVHDialog.setModel(oModel);
-            this._oSiteVHDialog.open();
-        },
-        error: (xhr) => {
-            sap.m.MessageToast.show("Failed to load Site IDs");
-            console.error(xhr);
         }
-    });
-},
-_onSiteSearch: function (oEvent) {
-    const sValue = oEvent.getParameter("value");
-
-    const oFilter = new sap.ui.model.Filter(
-        "site_id",
-        sap.ui.model.FilterOperator.Contains,
-        sValue
-    );
-
-    oEvent.getSource().getBinding("items").filter([oFilter]);
-},
-
-  _onSiteSelect: function (oEvent) {
-    const oItem = oEvent.getParameter("selectedItem");
-    if (!oItem) return;
-
-    const sSiteId = oItem.getTitle();
-
-    const oInput = this.byId("topName");
-
-    // 1️⃣ Set value
-    oInput.setValue(sSiteId);
-
-    // 2️⃣ Fire change event manually
-    oInput.fireChange({
-        value: sSiteId
-    });
-
-    this._oSiteVHDialog.close();
-},
-
-
-
-
-
-        // ========================= REPAIR STATUS ============================
-        // onRepairStatusChange: function (oEvent) {
-        //     if (oEvent.getSource().getSelectedKey() === "major") {
-        //         const no = "CMP-" + Math.floor(Math.random() * 1000000);
-        //         this.byId("campaign").setValue(no);
-        //         this.getView().getModel().setProperty("/campaignNo", no);
-        //         MessageToast.show("Campaign Re-generated");
-        //     }
-        // }
-
+        ,
     });
 });

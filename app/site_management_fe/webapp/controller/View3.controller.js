@@ -43,6 +43,176 @@ sap.ui.define([
                 .toISOString()
                 .split("T")[0];
         },
+        onSiteIdValueHelp: function () {
+            const oView = this.getView();
+
+            // Create dialog only once
+            if (!this._oSiteVHDialog) {
+                this._oSiteVHDialog = new sap.m.SelectDialog({
+                    title: "Select Site ID",
+
+                    liveChange: (oEvent) => {
+                        this._onSiteSearch(oEvent);
+                    },
+
+                    confirm: (oEvent) => {
+                        this._onSiteSelect(oEvent);
+                    },
+
+                    cancel: () => {
+                        this._oSiteVHDialog.close();
+                    },
+
+                    items: {
+                        path: "/sites",
+                        template: new sap.m.StandardListItem({
+                            title: "{site_id}",
+                            description: "{customer_name} - {location}"
+                        })
+                    }
+                });
+
+                oView.addDependent(this._oSiteVHDialog);
+            }
+
+            // Fetch SiteMaster data
+            $.ajax({
+                url: "/odata/v4/site-management/siteMaster",
+                method: "GET",
+                success: (res) => {
+                    const aSites = res?.value || [];
+
+                    const oModel = new sap.ui.model.json.JSONModel({
+                        sites: aSites
+                    });
+
+                    this._oSiteVHDialog.setModel(oModel);
+                    this._oSiteVHDialog.open();
+                },
+                error: (xhr) => {
+                    sap.m.MessageToast.show("Failed to load Site IDs");
+                    console.error(xhr);
+                }
+            });
+        },
+        _onSiteSearch: function (oEvent) {
+            const sValue = oEvent.getParameter("value");
+
+            const oFilter = new sap.ui.model.Filter(
+                "site_id",
+                sap.ui.model.FilterOperator.Contains,
+                sValue
+            );
+
+            oEvent.getSource().getBinding("items").filter([oFilter]);
+        },
+
+        _onSiteSelect: function (oEvent) {
+            const oItem = oEvent.getParameter("selectedItem");
+            if (!oItem) return;
+
+            const sSiteId = oItem.getTitle();
+
+            const oInput = this.byId("siteId");
+
+            // 1️⃣ Set value
+            oInput.setValue(sSiteId);
+
+            // 2️⃣ Fire change event manually
+            // oInput.fireChange({
+            //     value: sSiteId
+            // });
+
+            this._oSiteVHDialog.close();
+        },
+                onProdLineValueHelp: function () {
+            let enteredSiteId = this.byId("siteId").getValue();
+            if(!enteredSiteId){
+                sap.m.MessageToast.show("Please select a Site ID !")
+                return;
+            }
+            const oView = this.getView();
+
+            // Create dialog only once
+            if (!this._oProdVHDialog) {
+                this._oProdVHDialog = new sap.m.SelectDialog({
+                    title: "Select Production Line",
+
+                    liveChange: (oEvent) => {
+                        this._onProdLineSearch(oEvent);
+                    },
+
+                    confirm: (oEvent) => {
+                        this._onProdLineSelect(oEvent);
+                    },
+
+                    cancel: () => {
+                        this._oProdVHDialog.close();
+                    },
+
+                    items: {
+                        path: "/prods",
+                        template: new sap.m.StandardListItem({
+                            title: "{line_name}",
+                            description: "Site ID : {site_site_id}"
+                        })
+                    }
+                });
+
+                oView.addDependent(this._oProdVHDialog);
+            }
+
+            // Fetch SiteMaster data
+            $.ajax({
+                url: `/odata/v4/site-management/siteMaster(site_id='${enteredSiteId}')?$expand=siteProductionLines`,
+                method: "GET",
+                success: (res) => {
+                    console.log("received production data", res.siteProductionLines);
+                    const aProds = res.siteProductionLines || [];
+
+                    const oModel = new sap.ui.model.json.JSONModel({
+                        prods: aProds
+                    });
+
+                    this._oProdVHDialog.setModel(oModel);
+                    this._oProdVHDialog.open();
+                },
+                error: (xhr) => {
+                    sap.m.MessageToast.show("Failed to load production lines.");
+                    console.error(xhr);
+                }
+            });
+        },
+        _onProdLineSearch: function (oEvent) {
+            const sValue = oEvent.getParameter("value");
+
+            const oFilter = new sap.ui.model.Filter(
+                "line_name",
+                sap.ui.model.FilterOperator.Contains,
+                sValue
+            );
+
+            oEvent.getSource().getBinding("items").filter([oFilter]);
+        },
+
+        _onProdLineSelect: function (oEvent) {
+            const oItem = oEvent.getParameter("selectedItem");
+            if (!oItem) return;
+
+            const slineName = oItem.getTitle();
+
+            const oInput = this.byId("ProductionLineId1");
+
+            // 1️⃣ Set value
+            oInput.setValue(slineName);
+
+            // 2️⃣ Fire change event manually
+            // oInput.fireChange({
+            //     value: sSiteId
+            // });
+
+            this._oProdVHDialog.close();
+        },
 
         // ==========================================
         // Fetch site data and render production lines

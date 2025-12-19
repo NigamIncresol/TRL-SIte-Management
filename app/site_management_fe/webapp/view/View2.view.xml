@@ -10,35 +10,64 @@
         class="sapUiContentPadding sitePageBackground"
     >
         <!-- ========== SITE ID INPUT ========== -->
-        <HBox
-            justifyContent="SpaceBetween"
-            class="sapUiSmallMarginBottom sapUiSmallMarginBegin"
-            width="100%"
+        <Panel
+            headerText="Search"
+            class="whiteCard"
+            expandable="false"
         >
-            <!-- Left: Site ID -->
-            <VBox width="35%">
-                <Label text="Site ID" />
-                <Input
-                    id="siteId"
-                    change="onSiteIdChange"
-                    placeholder="Enter Site ID"
-                />
-            </VBox>
+            <content>
+                <HBox
+                    width="100%"
+                    justifyContent="SpaceBetween"
+                    alignItems="End"
+                    wrap="Wrap"
+                >
+                    <!-- Site ID -->
+                    <VBox width="28%">
+                        <Label text="Site ID" required="true"/>
+                        <Input
+                            id="siteId"
+                            placeholder="Enter Site ID"
+                            showValueHelp="true"
+                            valueHelpRequest="onSiteIdValueHelp"
+                        />
+                    </VBox>
 
-            <!-- Right: Date -->
-            <VBox
-                width="35%"
-                class="sapUiSmallMarginEnd"
-            >
-                <Label text="Date" />
+                    <!-- Production Line ID -->
+                    <VBox width="28%">
+                        <Label text="Production Line" required="true" />
+                        <Input
+                            id="ProductionLineId"
+                            placeholder="Enter Production Line"
+                            showValueHelp="true"
+                            valueHelpRequest="onProdLineValueHelp"
+                        />
+                    </VBox>
 
-                <Input
-                    id="siteDate"
-                    editable="false"
-                    class="sapUiSmallMarginEnd"
-                />
-            </VBox>
-        </HBox>
+                    <!-- Date -->
+                    <VBox width="28%">
+                        <Label text="Date" required="true" />
+                        <DatePicker
+                            id="siteDate"
+                            width="100%"
+                            valueFormat="yyyy-MM-dd"
+                            displayFormat="dd-MM-yyyy"
+                        />
+                    </VBox>
+
+                    <!-- Find Button -->
+                    <VBox width="8%">
+                        <Label text=" " />
+                        <Button
+                            text="Find"
+                            type="Emphasized"
+                            width="100%"
+                            press="onFindPress"
+                        />
+                    </VBox>
+                </HBox>
+            </content>
+        </Panel>
 
         <!-- ========== HEADER ========== -->
         <customHeader>
@@ -193,3 +222,4 @@
         </HBox>
     </Page>
 </mvc:View>
+
