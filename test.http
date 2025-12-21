@@ -173,4 +173,16 @@ Content-Type: application/json
 
 {
 }
+### Update Site Production Line
+PATCH http://localhost:4004/odata/v4/site-management/siteProductionLine('1022e24d-934e-4718-bd2c-daa7656f1087')
+Content-Type: application/json
+Accept: application/json
+
+{
+  "curr_campaign": "cp3",
+  "curr_repair_status": "minor",
+  "curr_minor_repair_status": "1"
+
+}
+
 

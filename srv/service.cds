@@ -4,7 +4,7 @@ service siteManagementService {
     entity siteMaster         as projection on trlmonitoring.SiteMaster;
 
     entity siteProductionLine as projection on trlmonitoring.SiteProductionLine;
-
+    
     entity campaign           as projection on trlmonitoring.Campaign;
 
     entity sensor             as projection on trlmonitoring.Sensor;

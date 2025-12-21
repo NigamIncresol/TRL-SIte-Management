@@ -29,6 +29,7 @@
                             id="siteId"
                             placeholder="Enter Site ID"
                             showValueHelp="true"
+                            liveChange="onSiteIdLiveChange" 
                             valueHelpRequest="onSiteIdValueHelp"
                         />
                     </VBox>
@@ -40,7 +41,9 @@
                             id="ProductionLineId"
                             placeholder="Enter Production Line"
                             showValueHelp="true"
+                            liveChange="onProdLineLiveChange"
                             valueHelpRequest="onProdLineValueHelp"
+                            editable="true"
                         />
                     </VBox>
 
@@ -130,7 +133,7 @@
                 <VBox>
                     <Label text="Campaign No" />
                     <Input
-                        value="{view>/siteMaster/campaign_no}"
+                        value="{view>/campinfo/campaign_no}"
                         editable="false"
                     />
                 </VBox>
@@ -142,7 +145,7 @@
                         <core:Item key="MINOR" text="Minor"/>
                     </ComboBox> -->
                     <Input
-                        value="{view>/siteMaster/repair_status}"
+                        value="{view>/campinfo/repair_status}"
                         editable="false"
                     />
                 </VBox>
@@ -150,7 +153,7 @@
                 <VBox>
                     <Label text="Minor Repair Status" />
                     <Input
-                        value="{view>/siteMaster/minor_repair_status}"
+                        value="{view>/campinfo/minor_repair_status}"
                         type="Number"
                         editable="false"
                     />
@@ -185,7 +188,6 @@
                         <Input
                             width="100%"
                             id="remark"
-                            value="{view>/remark}"
                             editable="{view>/isProductionEditable}"
                         />
                     </VBox>

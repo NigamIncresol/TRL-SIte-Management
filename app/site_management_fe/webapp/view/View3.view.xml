@@ -92,29 +92,40 @@
                 >
                     <!-- Site ID -->
                     <VBox width="25%">
-                        <Label text="Site ID" required="true" />
+                        <Label
+                            text="Site ID"
+                            required="true"
+                        />
                         <Input
                             id="siteId"
                             placeholder="Enter Site ID"
                             showValueHelp="true"
+                            liveChange="onSiteIdLiveChange"
                             valueHelpRequest="onSiteIdValueHelp"
                         />
                     </VBox>
 
                     <!-- Production Line ID -->
                     <VBox width="25%">
-                        <Label text="Production Line" required="true" />
+                        <Label
+                            text="Production Line"
+                            required="true"
+                        />
                         <Input
                             id="ProductionLineId1"
                             placeholder="Enter Production Line"
                             showValueHelp="true"
+                            liveChange="onProdLineLiveChange"
                             valueHelpRequest="onProdLineValueHelp"
                         />
                     </VBox>
 
                     <!-- Date -->
                     <VBox width="25%">
-                        <Label text="Date" required="true" />
+                        <Label
+                            text="Date"
+                            required="true"
+                        />
                         <DatePicker
                             id="siteDate1"
                             width="100%"
@@ -124,7 +135,10 @@
                     </VBox>
 
                     <VBox justifyContent="End">
-                        <Label text="Shift" required="true"/>
+                        <Label
+                            text="Shift"
+                            required="true"
+                        />
                         <Select
                             selectedKey="{formData>/shift}"
                             forceSelection="true"
@@ -168,14 +182,30 @@
             class="whiteCard"
         >
             <layout:Grid
-                defaultSpan="L3 M4 S12"
-                hSpacing="2"
+                defaultSpan="L4 M6 S12"
+                hSpacing="1"
                 vSpacing="1"
             >
                 <VBox>
+                    <Label text="Customer" />
+                    <Input
+                        value="{formData>/siteMaster/customer_name}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Location" />
+                    <Input
+                        value="{formData>/siteMaster/location}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
                     <Label text="Runner ID" />
                     <Input
-                        value="{formData>/runnerId}"
+                        value="{formData>/siteMaster/runner_id}"
                         editable="false"
                     />
                 </VBox>
@@ -183,7 +213,7 @@
                 <VBox>
                     <Label text="Campaign No" />
                     <Input
-                        value="{formData>/campaignNo}"
+                        value="{formData>/campinfo/campaign_no}"
                         editable="false"
                     />
                 </VBox>
@@ -191,7 +221,7 @@
                 <VBox>
                     <Label text="Repair Status" />
                     <Input
-                        value="{formData>/repairStatus}"
+                        value="{formData>/campinfo/repair_status}"
                         editable="false"
                     />
                 </VBox>
@@ -199,7 +229,8 @@
                 <VBox>
                     <Label text="Minor Repair Status" />
                     <Input
-                        value="{formData>/minorRepairStatus}"
+                        value="{formData>/campinfo/minor_repair_status}"
+                        type="Number"
                         editable="false"
                     />
                 </VBox>

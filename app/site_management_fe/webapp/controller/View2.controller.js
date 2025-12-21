@@ -29,15 +29,12 @@ sap.ui.define([
 
         onInit: function () {
             this.getView().setModel(new JSONModel(), "view");
+            this._isExistingDailyProduction = false;
         },
         onAfterRendering: function () {
             this.getISTDate();
 
         },
-
-        /**
-         * Triggered when Site ID input changes
-         */
         getISTDate: function () {
             const now = new Date();
 
@@ -47,7 +44,30 @@ sap.ui.define([
             this.byId("siteDate").setValue(istDate.toISOString().split("T")[0]);
             return istDate.toISOString().split("T")[0]; // yyyy-mm-dd
         },
+        onSiteIdLiveChange: function (oEvent) {
+            const oInput = oEvent.getSource();
+
+            // Clear typed value
+            oInput.setValue("");
+
+            // Inform user
+            MessageToast.show("Please select Site ID using the value help", {
+                duration: 2000
+            });
+        },
+        onProdLineLiveChange: function (oEvent) {
+            const oInput = oEvent.getSource();
+
+            // Clear typed value
+            oInput.setValue("");
+
+            // Inform user
+            MessageToast.show("Please select Line name using the value help", {
+                duration: 2000
+            });
+        },
         onSiteIdValueHelp: function () {
+
             const oView = this.getView();
 
             // Create dialog only once
@@ -134,7 +154,7 @@ sap.ui.define([
         },
         onProdLineValueHelp: function () {
             let enteredSiteId = this.byId("siteId").getValue();
-            if(!enteredSiteId){
+            if (!enteredSiteId) {
                 sap.m.MessageToast.show("Please select a Site ID !")
                 return;
             }
@@ -171,11 +191,13 @@ sap.ui.define([
 
             // Fetch SiteMaster data
             $.ajax({
-                url: `/odata/v4/site-management/siteMaster(site_id='${enteredSiteId}')?$expand=siteProductionLines`,
+                url: `/odata/v4/site-management/siteMaster(site_id='${enteredSiteId}')?$expand=productionLines`,
                 method: "GET",
                 success: (res) => {
-                    console.log("received production data", res.siteProductionLines);
-                    const aProds = res.siteProductionLines || [];
+                    console.log("received production data", res.productionLines);
+
+                    this.siteMasterCompleteData = res; //storing the whole details for future use
+                    const aProds = res.productionLines || [];
 
                     const oModel = new sap.ui.model.json.JSONModel({
                         prods: aProds
@@ -219,206 +241,285 @@ sap.ui.define([
             // });
 
             this._oProdVHDialog.close();
-        },
-
-        onSiteIdChange: function (oEvent) {
-            const siteId = oEvent.getSource().getValue().trim();
-            if (!siteId) return;
-
-            const sDate = this.getISTDate(); // yyyy-mm-dd
-
-            // Build service URL with $expand and filter for today's dailyProduction
-            const sServiceUrl = `/odata/v4/site-management/siteMaster` +
-                `?$filter=site_id eq '${encodeURIComponent(siteId)}'` +
-                `&$expand=siteProductionLines(` +
-                `$expand=dailyProductions($filter=production_date eq ${sDate})` +
-                `)`;
-
-
-            fetch(sServiceUrl, {
-                method: "GET",
-                headers: { "Accept": "application/json" }
-            })
-                .then(resp => resp.ok ? resp.json() : Promise.reject("Site not found"))
-                .then(data => {
-                    if (!data.value || data.value.length === 0) throw new Error("Site not found");
-
-                    const oSite = data.value[0];
-                    console.log("Fetched Site Data:", oSite);
-                    // Initialize remark
-                    const oFirstLine = oSite.siteProductionLines?.[0];
-                    const oDaily = oFirstLine?.dailyProductions?.[0] || {};
-                    //setting model
-                    const oViewModel = this.getView().getModel("view");
-                    oViewModel.setProperty("/siteMaster", oSite);
-                    oViewModel.setProperty("/remark", oDaily.remarks || "");
-
-                    // Determine editability: productionStageCompleted
-                    const bEditable = !oSite.siteProductionLines?.some(line =>
-                        line.dailyProductions?.some(d => d.productionStageCompleted)
-                    );
-                    oViewModel.setProperty("/isProductionEditable", bEditable);
-
-                    // Clear previous UI
-                    const oLinesContainer = this.byId("linesContainer");
-                    oLinesContainer.destroyItems();
-
-                    // Render production lines dynamically
-                    (oSite.siteProductionLines || []).forEach(line => {
-                        const oDaily = line.dailyProductions?.[0] || {}; // may be empty
-
-                        const oPanel = new sap.m.Panel({
-                            headerText: "Production Line : " + line.line_name,
-                            expandable: false,
-                            customData: [
-                                new sap.ui.core.CustomData({ key: "lineId", value: line.ID })
-                            ],
-                            content: [
-                                new sap.ui.layout.Grid({
-                                    defaultSpan: "L4 M6 S12",
-                                    hSpacing: 1,
-                                    vSpacing: 1,
-                                    content: [
-                                        new sap.m.VBox({
-                                            items: [
-                                                new sap.m.Label({ text: "Production Line Name" }),
-                                                new sap.m.Input({ value: line.line_name, editable: false })
-                                            ]
-                                        }),
-                                        new sap.m.VBox({
-                                            items: [
-                                                new sap.m.Label({ text: "Production Data" }),
-                                                new sap.m.Input({
-                                                    type: "Number",
-                                                    placeholder: "Enter production data",
-                                                    value: oDaily.production_data || "",
-                                                    editable: bEditable
-                                                })
-                                            ]
-                                        }),
-                                        new sap.m.VBox({
-                                            items: [
-                                                new sap.m.Label({ text: "Erosion Data" }),
-                                                new sap.m.Input({
-                                                    type: "Number",
-                                                    placeholder: "Enter erosion data",
-                                                    value: oDaily.erosion_data || "",
-                                                    editable: bEditable
-                                                })
-                                            ]
-                                        })
-                                    ]
-                                })
-                            ]
-                        });
-
-                        // Store dailyProduction ID in customData for PATCH logic
-                        if (oDaily.ID) {
-                            oPanel.addCustomData(new sap.ui.core.CustomData({ key: "dailyId", value: oDaily.ID }));
-                        }
-
-                        oPanel.addStyleClass("sapUiSmallMarginBottom");
-                        oLinesContainer.addItem(oPanel);
-                    });
-
-                })
-                .catch(err => {
-                    sap.m.MessageToast.show(err.message || err);
-                    this.byId("linesContainer").destroyItems();
-                    this.getView().getModel("view").setProperty("/siteMaster", {});
-                });
         }
-
         ,
+        onFindPress: async function () {
+            const oView = this.getView();
 
-        /**
-         * Save updated production and erosion data using Production Line ID
-         */
-        onSave: function () {
-            const oModel = this.getView().getModel("view");
-            const siteData = oModel.getProperty("/siteMaster");
-            const campNo = oModel.getProperty("/siteMaster").campaign_no;
-            let sDate = this.getISTDate(); // yyyy-mm-dd
-            const sRemark = this.byId("remark")?.getValue() || "";
+            let oViewModel = oView.getModel("view");
+            if (!oViewModel) {
+                oViewModel = new sap.ui.model.json.JSONModel();
+                oView.setModel(oViewModel, "view");
+            }
 
-            if (!siteData?.siteProductionLines?.length) {
-                sap.m.MessageToast.show("No production lines to save");
+            const sSiteId = oView.byId("siteId").getValue().trim();
+            const sProdLine = oView.byId("ProductionLineId").getValue().trim();
+            const sDate = oView.byId("siteDate").getValue().trim();
+
+            if (!sSiteId || !sProdLine || !sDate) {
+                sap.m.MessageToast.show("Please fill all required fields");
                 return;
             }
 
-            siteData.siteProductionLines.forEach(line => {
+            const ajaxPromise = (url) => {
+                return new Promise((resolve, reject) => {
+                    $.ajax({
+                        url: url,
+                        method: "GET",
+                        dataType: "json",
+                        success: resolve,
+                        error: reject
+                    });
+                });
+            };
 
-                const oDaily = line.dailyProductions?.[0]; // existing record if any
+            const siteMaster = this.siteMasterCompleteData;
 
-                const aGridContent = this.byId("linesContainer")
-                    .getItems()
-                    .find(p => p.getCustomData().find(d => d.getKey() === "lineId").getValue() === line.ID)
-                    .getContent()[0].getContent();
-
-                const iProduction = parseInt(aGridContent[1].getItems()[1].getValue(), 10) || 0;
-                const iErosion = parseInt(aGridContent[2].getItems()[1].getValue(), 10) || 0;
-
-                const payload = {
-                    production_date: sDate,
-                    production_data: iProduction,
-                    erosion_data: iErosion,
-                    remarks: sRemark,
-                    productionLine_ID: line.ID,
-                    campaign_no: campNo
-                };
-
-                // ==========================
-                // PATCH if existing, else POST
-                // ==========================
-                if (oDaily?.ID) {
-                    fetch(`/odata/v4/site-management/dailyProduction('${oDaily.ID}')`, {
-                        method: "PATCH",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json"
-                        },
-                        body: JSON.stringify(payload)
-                    })
-                        .then(resp => {
-                            if (!resp.ok) throw new Error("Failed to update production");
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            sap.m.MessageToast.show(err.message);
-                        });
-                } else {
-                    fetch("/odata/v4/site-management/dailyProduction", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Accept": "application/json"
-                        },
-                        body: JSON.stringify(payload)
-                    })
-                        .then(resp => {
-                            if (!resp.ok) throw new Error("Failed to create production");
-                        })
-                        .catch(err => {
-                            console.error(err);
-                            sap.m.MessageToast.show(err.message);
-                        });
-                }
-
+            oViewModel.setProperty("/siteMaster", {
+                customer_name: siteMaster.customer_name,
+                location: siteMaster.location,
+                runner_id: siteMaster.runner_id
             });
 
-            sap.m.MessageToast.show("Daily production saved successfully");
+            const dailyDataFetchUrl =
+                `/odata/v4/site-management/dailyProduction(` +
+                `site_id='${encodeURIComponent(sSiteId)}',` +
+                `productionLineName='${encodeURIComponent(sProdLine)}',` +
+                `production_date=${sDate}` +
+                `)`;
+
+            try {
+                const dailyResponse = await ajaxPromise(dailyDataFetchUrl);
+
+                this._isExistingDailyProduction = true;
+
+                const isSubmitted = !!dailyResponse.productionStageCompleted;
+                oViewModel.setProperty("/isProductionEditable", !isSubmitted);
+
+                if (isSubmitted) {
+                    sap.m.MessageToast.show(
+                        "Production stage already submitted. Editing disabled."
+                    );
+                }
+                else {
+                    sap.m.MessageToast.show(
+                        "Existing production data found for the selected line/date"
+                    );
+                }
+
+
+                this.renderProductionLine(siteMaster, dailyResponse);
+
+                this.byId("remark").setValue(dailyResponse.remarks || "");
+
+                oViewModel.setProperty("/campinfo", {
+                    campaign_no: dailyResponse.curr_campaign || "",
+                    repair_status: dailyResponse.curr_repair_status || "",
+                    minor_repair_status: dailyResponse.curr_minor_repair_status || 0
+                });
+
+            } catch (err) {
+                if (err.status !== 404) {
+                    console.error("AJAX Error:", err.status, err.statusText);
+                    sap.m.MessageToast.show("Error fetching daily production data");
+                    return;
+                }
+
+                sap.m.MessageToast.show(
+                    "No production data found for the selected line/date"
+                );
+
+                this._isExistingDailyProduction = false;
+                oViewModel.setProperty("/isProductionEditable", true);
+
+                this.renderProductionLine(siteMaster, null);
+
+                const matchingLine = siteMaster.productionLines.find(
+                    line => line.line_name === sProdLine
+                );
+
+                oViewModel.setProperty("/campinfo", matchingLine ? {
+                    campaign_no: matchingLine.curr_campaign,
+                    repair_status: matchingLine.curr_repair_status,
+                    minor_repair_status: matchingLine.curr_minor_repair_status
+                } : {
+                    campaign_no: "",
+                    repair_status: "",
+                    minor_repair_status: 0
+                });
+
+                this.byId("remark").setValue("");
+            }
+        }
+
+
+        ,
+
+
+        // --- Render Production Line Helper ---
+        renderProductionLine: function (siteData, dailyData) {
+            const oView = this.getView();
+            const oViewModel = oView.getModel("view");
+            const oLinesContainer = oView.byId("linesContainer");
+            oLinesContainer.destroyItems();
+
+            const sProdLine = oView.byId("ProductionLineId").getValue().trim();
+
+            // Find the production line matching the entered name
+            const oLine = (siteData.productionLines || []).find(line => line.line_name === sProdLine);
+
+            if (!oLine) {
+                sap.m.MessageToast.show("Production line not found");
+                return;
+            }
+
+            const bEditable = true; // Customize based on productionStageCompleted if needed
+
+            const oPanel = new sap.m.Panel({
+                headerText: "Production Line : " + oLine.line_name,
+                expandable: false,
+                customData: [new sap.ui.core.CustomData({ key: "lineId", value: oLine.ID })],
+                content: [
+                    new sap.ui.layout.Grid({
+                        defaultSpan: "L4 M6 S12",
+                        hSpacing: 1,
+                        vSpacing: 1,
+                        content: [
+                            new sap.m.VBox({
+                                items: [
+                                    new sap.m.Label({ text: "Production Line Name" }),
+                                    new sap.m.Input({ value: oLine.line_name, editable: false })
+                                ]
+                            }),
+                            new sap.m.VBox({
+                                items: [
+                                    new sap.m.Label({ text: "Production Data" }),
+                                    new sap.m.Input({
+                                        type: "Number",
+                                        placeholder: "Enter production data",
+                                        value: dailyData?.production_data || "",
+                                        editable: bEditable
+                                    })
+                                ]
+                            }),
+                            new sap.m.VBox({
+                                items: [
+                                    new sap.m.Label({ text: "Erosion Data" }),
+                                    new sap.m.Input({
+                                        type: "Number",
+                                        placeholder: "Enter erosion data",
+                                        value: dailyData?.erosion_data || "",
+                                        editable: bEditable
+                                    })
+                                ]
+                            })
+                        ]
+                    })
+                ]
+            });
+
+            oPanel.addStyleClass("sapUiSmallMarginBottom");
+            oLinesContainer.addItem(oPanel);
+        }
+
+
+        ,
+        onSave: function () {
+            const oView = this.getView();
+
+            const siteId = oView.byId("siteId").getValue().trim();
+            const prodLineName = oView.byId("ProductionLineId").getValue().trim();
+            const prodDate = oView.byId("siteDate").getValue().trim();
+            const remark = oView.byId("remark").getValue();
+
+            const campInfo = oView.getModel("view").getProperty("/campinfo");
+
+            const oPanel = oView.byId("linesContainer").getItems()[0];
+            if (!oPanel) {
+                sap.m.MessageToast.show("No production data");
+                return;
+            }
+
+            const aGrid = oPanel.getContent()[0].getContent();
+
+            const productionData =
+                parseInt(aGrid[1].getItems()[1].getValue(), 10) || 0;
+
+            const erosionData =
+                parseInt(aGrid[2].getItems()[1].getValue(), 10) || 0;
+
+            const payload = {
+                production_data: productionData,
+                erosion_data: erosionData,
+                remarks: remark,
+                curr_campaign: campInfo?.campaign_no || "",
+                curr_repair_status: campInfo?.repair_status || "",
+                curr_minor_repair_status: campInfo?.minor_repair_status || 0
+            };
+
+            if (this._isExistingDailyProduction) {
+                const keyPredicate =
+                    `site_id='${encodeURIComponent(siteId)}',` +
+                    `productionLineName='${encodeURIComponent(prodLineName)}',` +
+                    `production_date=${prodDate}`;
+
+                $.ajax({
+                    url: `/odata/v4/site-management/dailyProduction(${keyPredicate})`,
+                    method: "PATCH",
+                    contentType: "application/json",
+                    dataType: "json",
+                    data: JSON.stringify(payload),
+                    success: () => {
+                        sap.m.MessageToast.show("Daily production updated");
+                    },
+                    error: (xhr) => {
+                        const msg =
+                            xhr.responseJSON?.error?.message || "Update failed";
+                        sap.m.MessageBox.error(msg);
+                    }
+                });
+
+            } else {
+                const postPayload = {
+                    site_id: siteId,
+                    productionLineName: prodLineName,
+                    production_date: prodDate,
+                    productionStageCompleted: false,
+                    ...payload
+                };
+
+                $.ajax({
+                    url: "/odata/v4/site-management/dailyProduction",
+                    method: "POST",
+                    contentType: "application/json",
+                    dataType: "json",
+                    data: JSON.stringify(postPayload),
+                    success: () => {
+                        this._isExistingDailyProduction = true;
+                        sap.m.MessageToast.show("Daily production created");
+                    },
+                    error: (xhr) => {
+                        const msg =
+                            xhr.responseJSON?.error?.message || "Create failed";
+                        sap.m.MessageBox.error(msg);
+                    }
+                });
+            }
         }
 
         ,
         onSubmit: function () {
+            const oView = this.getView();
+            const oViewModel = oView.getModel("view");
 
-            const sSiteId = this.byId("siteId").getValue();
-            if (!sSiteId) {
-                sap.m.MessageToast.show("Please enter Site ID");
+            const sSiteId = this.byId("siteId").getValue().trim();
+            const sProdLine = this.byId("ProductionLineId").getValue().trim();
+            const sDate = this.byId("siteDate").getValue().trim(); // yyyy-mm-dd
+
+            if (!sSiteId || !sProdLine || !sDate) {
+                sap.m.MessageToast.show("Please fill all required fields");
                 return;
             }
-
-            const sDate = this.getISTDate(); // yyyy-mm-dd
 
             sap.m.MessageBox.confirm(
                 "Confirm submission? Changes will not be allowed after this.",
@@ -431,65 +532,46 @@ sap.ui.define([
                     emphasizedAction: sap.m.MessageBox.Action.YES,
 
                     onClose: function (sAction) {
-
                         if (sAction !== sap.m.MessageBox.Action.YES) {
                             return;
                         }
 
-                        fetch("/odata/v4/site-management/submitDailyProduction", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "Accept": "application/json"
+                        const patchUrl = `/odata/v4/site-management/dailyProduction(` +
+                            `site_id='${encodeURIComponent(sSiteId)}',` +
+                            `productionLineName='${encodeURIComponent(sProdLine)}',` +
+                            `production_date=${encodeURIComponent(sDate)}` +
+                            `)`;
+
+                        const payload = {
+                            productionStageCompleted: true
+                        };
+
+                        $.ajax({
+                            url: patchUrl,
+                            method: "PATCH",
+                            contentType: "application/json",
+                            data: JSON.stringify(payload),
+                            success: function () {
+                                sap.m.MessageToast.show("Production submitted successfully");
+
+                                // Lock UI after submission
+                                oViewModel.setProperty("/isProductionEditable", false);
                             },
-                            body: JSON.stringify({
-                                site_id: sSiteId,
-                                date: sDate
-                            })
-                        })
-                            .then(resp => {
-
-                                // ❌ Handle errors
-                                if (!resp.ok) {
-                                    return resp.json().then(err => {
-                                        throw new Error(
-                                            err?.error?.message || "Submission failed"
-                                        );
-                                    });
-                                }
-
-                                // ✅ Handle 204 No Content
-                                if (resp.status === 204) {
-                                    return {
-                                        message: "Production submitted successfully"
-                                    };
-                                }
-
-                                // ✅ Handle 200 with body
-                                return resp.json();
-                            })
-                            .then(result => {
-
-                                sap.m.MessageToast.show(
-                                    result.message || "Production submitted successfully"
-                                );
-
-                                // 🔒 Lock UI immediately
-                                this.getView().getModel("view")
-                                    .setProperty("/isProductionEditable", false);
-                            })
-                            .catch(err => {
-                                sap.m.MessageBox.error(err.message);
-                                console.error(err);
-                            });
+                            error: function (xhr) {
+                                let errMsg = "Submission failed";
+                                try {
+                                    const err = JSON.parse(xhr.responseText);
+                                    errMsg = err?.error?.message || errMsg;
+                                } catch (e) { }
+                                sap.m.MessageBox.error(errMsg);
+                                console.error(xhr);
+                            }
+                        });
 
                     }.bind(this)
                 }
             );
         }
-
-
-
 
     });
 });
