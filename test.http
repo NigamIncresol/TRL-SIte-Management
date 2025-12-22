@@ -116,37 +116,7 @@ GET http://localhost:4004/odata/v4/site-management/siteMaster?$expand=*,siteProd
 GET http://localhost:4004/odata/v4/site-management/siteMaster('7d98f0e0-1cb0-40bf-a9ef-0e51a9fb3de7')?$expand=siteProductionLines($expand=sensors)
 
 
-### Test getLastCampaignNo function
-GET http://localhost:4004/odata/v4/site-management/getLastCampaignNo(customer_name='Dolvi',location='Pune',runner_id='Furnace-A')
-Accept: application/json
 
-
-### Generate Campaign Number
-POST http://localhost:4004/odata/v4/site-management/generateCampaignNo
-Content-Type: application/json
-
-{
-  "customer_name": "Dolvi",
-  "location": "Pune",
-  "runner_id": "Furnace-A"
-}
-
-### Generate Site ID
-POST http://localhost:4004/odata/v4/site-management/generateSiteId
-Content-Type: application/json
-
-{
-  "customer_name": "Dolvi",
-  "location": "Pune",
-  "runner_id": "Furnace-A"
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-### 1️⃣ Create campaign – ID only (AUTO GENERATE CAMP-n)
-POST http://localhost:4004/odata/v4/site-management/Campaign
-Content-Type: application/json
-
-{}
 
 ### Get Site with Production Lines and Sensors
 GET http://localhost:4004/odata/v4/site-management/siteMaster(site_id='SITE-TRL-PUN-RUN-001')?$expand=siteProductionLines($expand=sensors,dailyProductions)
@@ -184,5 +154,10 @@ Accept: application/json
   "curr_minor_repair_status": "1"
 
 }
+
+### Generate Campaign Number
+GET http://localhost:4004/odata/v4/site-management/generateCampaignNumber(customer_name='TRL',location='Pune',runner_id='Blast',line_name='EAST')
+Accept: application/json
+
 
 

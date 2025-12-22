@@ -237,7 +237,16 @@ sap.ui.define([
                 method: "GET",
                 success: res => {
                     if (res) {
-                        console.log("recicied date responese", res)
+                        console.log("received date responese", res)
+                        this.ExistingcampaignArray = res.productionLines.map(line => {
+                            return {
+                                line_name: line.line_name,
+                                curr_campaign: line.curr_campaign,
+                                curr_repair_status: line.curr_repair_status,
+                                curr_minor_repair_status: line.curr_minor_repair_status
+                            };
+                        });
+
                         // Populate form with site data
                         const oModel = this.getView().getModel();
                         oModel.setProperty("/site_id", res.site_id);
@@ -246,16 +255,7 @@ sap.ui.define([
                         oModel.setProperty("/runnerId", res.runner_id);
 
                         oModel.setProperty("/lineCount", res.productionLines.length);
-                        this._previousMinorRepairStatus = res.minor_repair_status;
-                        this._oldStatus = res.repair_status;
 
-                        //if major repair coming then make minor status non editable.
-                        if (res.repair_status == "major") {
-                            this.byId("minorRepairStatus").setEditable(false);
-                        }
-                        if (res.repair_status == "minor") {
-                            this.byId("minorRepairStatus").setEditable(true);
-                        }
                         // Render lines as read-only
                         this._renderProductionLines(res.productionLines, true);
 
@@ -574,6 +574,34 @@ sap.ui.define([
             );
         }
         ,
+        _shouldCreateNewCampaign: function (lineName, newMinor) {
+            const old = this.ExistingcampaignArray?.find(
+                e => e.line_name === lineName
+            );
+
+            if (!old) return false;
+
+            // major + 0 → new
+            if (old.curr_repair_status === "major" && old.curr_minor_repair_status === 0) {
+                return true;
+            }
+
+            // minor + 3 → new
+            if (old.curr_repair_status === "minor" && old.curr_minor_repair_status === 3) {
+                return true;
+            }
+
+            // minor 1/2 → only +1 allowed
+            if (old.curr_repair_status === "minor") {
+                if (newMinor !== old.curr_minor_repair_status + 1) {
+                    sap.m.MessageToast.show("Minor repair can increase only by 1");
+                    return "BLOCK";
+                }
+            }
+
+            return false;
+        },
+
 
         // ========================= DYNAMIC LINES ============================
         onLineCountChange: function (oEvent) {
@@ -600,7 +628,6 @@ sap.ui.define([
         }
         ,
         _renderProductionLines: function (aLinesFromAPI, bReadOnly) {
-
             const container = this.byId("linesContainer");
             const oModel = this.getView().getModel();
 
@@ -616,7 +643,10 @@ sap.ui.define([
                     expanded: true
                 }).addStyleClass("whiteCard sapUiMediumMarginBottom");
 
-                const lineName = new sap.m.Input({
+                // -------------------------
+                // Line Name Input
+                // -------------------------
+                const lineNameInput = new sap.m.Input({
                     value: line.line_name || "",
                     editable: !bReadOnly,
                     liveChange: e => {
@@ -624,6 +654,21 @@ sap.ui.define([
                     }
                 });
 
+                // -------------------------
+                // Campaign Input
+                // -------------------------
+                const campaignInput = new sap.m.Input({
+                    value: {
+                        path: `/lines/${index}/campaign/campaign_no`,
+                        mode: sap.ui.model.BindingMode.TwoWay
+                    },
+                    width: "100%",
+                    editable: !bReadOnly
+                });
+
+                // -------------------------
+                // SPG Count
+                // -------------------------
                 const spgCount = new sap.m.Input({
                     type: "Number",
                     value: line.no_of_spg_sensors || 0,
@@ -631,13 +676,39 @@ sap.ui.define([
                     change: this._handleSpgChange.bind(this, index)
                 });
 
+                // -------------------------
+                // Mudgun Count + Generate Campaign
+                // -------------------------
                 const mudgunCount = new sap.m.Input({
                     type: "Number",
                     value: line.no_of_mudgun_sensors || 0,
                     editable: !bReadOnly,
-                    change: this._handleMudgunChange.bind(this, index)
+                    change: e => {
+                        this._handleMudgunChange(index, e);
+
+                        const data = oModel.getData();
+                        const customer = data.customer;
+                        const location = data.location;
+                        const runnerId = data.runnerId;
+
+                        // Always read latest line name
+                        const lineName = lineNameInput.getValue();
+
+                        this._getCampaignNumber(customer, location, runnerId, lineName)
+                            .then(campaignNo => {
+                                campaignInput.setValue(campaignNo);
+                                oModel.setProperty(`/lines/${index}/campaign/campaign_no`, campaignNo);
+                                sap.m.MessageToast.show(`Campaign generated: ${campaignNo}`);
+                            })
+                            .catch(() => {
+                                sap.m.MessageToast.show("Error generating campaign number");
+                            });
+                    }
                 });
 
+                // -------------------------
+                // Sensor Boxes
+                // -------------------------
                 const spgBox = new sap.m.HBox({ wrap: "Wrap" });
                 const mudgunBox = new sap.m.HBox({ wrap: "Wrap" });
 
@@ -647,43 +718,42 @@ sap.ui.define([
                         value: sensor.sensor_name,
                         editable: false
                     });
-                    sensor.sensor_type === "SPG"
-                        ? spgBox.addItem(input)
-                        : mudgunBox.addItem(input);
+                    sensor.sensor_type === "SPG" ? spgBox.addItem(input) : mudgunBox.addItem(input);
                 });
 
+                // -------------------------
+                // Line Grid
+                // -------------------------
                 const lineGrid = new sap.ui.layout.Grid({
                     defaultSpan: "L4 M6 S12",
                     content: [
-                        new sap.m.VBox({
-                            items: [
-                                new sap.m.Label({ text: "Line Name", design: "Bold" }),
-                                lineName
-                            ]
-                        }),
-                        new sap.m.VBox({
-                            items: [
-                                new sap.m.Label({ text: "No of SPG Sensors", design: "Bold" }),
-                                spgCount,
-                                spgBox
-                            ]
-                        }),
-                        new sap.m.VBox({
-                            items: [
-                                new sap.m.Label({ text: "No of Mudgun Sensors", design: "Bold" }),
-                                mudgunCount,
-                                mudgunBox
-                            ]
-                        })
+                        new sap.m.VBox({ items: [new sap.m.Label({ text: "Line Name", design: "Bold" }), lineNameInput] }),
+                        new sap.m.VBox({ items: [new sap.m.Label({ text: "No of SPG Sensors", design: "Bold" }), spgCount, spgBox] }),
+                        new sap.m.VBox({ items: [new sap.m.Label({ text: "No of Mudgun Sensors", design: "Bold" }), mudgunCount, mudgunBox] })
                     ]
                 });
 
-                const campaignInput = new sap.m.Input({
-                    value: line.curr_campaign || "",
+                // -------------------------
+                // Repair Status Inputs
+                // -------------------------
+                const minorRepairInput = new sap.m.Input({
+                    type: "Number",
+                    value: line.curr_repair_status === "minor" ? (line.curr_minor_repair_status || 1) : 0,
                     width: "100%",
-                    editable: !bReadOnly,
-                    liveChange: e => {
-                        oModel.setProperty(`/lines/${index}/campaign/campaign_no`, e.getParameter("value"));
+                    editable: line.curr_repair_status === "minor",
+                    change: e => {
+                        let val = parseInt(e.getParameter("value") || 0, 10);
+                        if (repairStatusCombo.getSelectedKey() === "minor") {
+                            if (![1, 2, 3].includes(val)) {
+                                sap.m.MessageToast.show("Minor repair count can only be 1, 2, or 3");
+                                val = 1;
+                                minorRepairInput.setValue(val);
+                            }
+                        } else {
+                            val = 0;
+                            minorRepairInput.setValue(0);
+                        }
+                        oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, val);
                     }
                 });
 
@@ -691,11 +761,83 @@ sap.ui.define([
                     selectedKey: line.curr_repair_status || "",
                     width: "100%",
                     editable: true,
-                    selectionChange: e => {
-                        oModel.setProperty(
-                            `/lines/${index}/campaign/repair_status`,
-                            e.getSource().getSelectedKey()
-                        );
+                    selectionChange: async e => {
+                        const status = e.getSource().getSelectedKey();
+                        const oModel = this.getView().getModel();
+                        const data = oModel.getData();
+                        const lineName = line.line_name;
+
+                        // 🔍 find existing campaign
+                        const existing = this.ExistingcampaignArray?.find(c => c.line_name === lineName);
+
+                        // Update model repair status
+                        oModel.setProperty(`/lines/${index}/campaign/repair_status`, status);
+
+                        // ===============================
+                        // STATUS CHANGED -> NEW CAMPAIGN
+                        // ===============================
+                        const majorToMinor = existing && existing.curr_repair_status === "major" && status === "minor";
+                        const minorToMajor = existing && existing.curr_repair_status === "minor" && status === "major";
+
+                        if (majorToMinor || minorToMajor) {
+                            const newCampaign = await this._getCampaignNumber(
+                                data.customer,
+                                data.location,
+                                data.runnerId,
+                                lineName
+                            );
+
+
+                            oModel.setProperty(`/lines/${index}/campaign/campaign_no`, newCampaign);
+                            if (majorToMinor) {
+                                oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 1);
+                                minorRepairInput.setValue(1);
+                                minorRepairInput.setEditable(true);
+                            } else {
+                                oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 0);
+                                minorRepairInput.setValue(0);
+                                minorRepairInput.setEditable(false);
+                            }
+
+                            oModel.refresh(true);
+
+                            minorRepairInput.setValue(0);
+                            minorRepairInput.setEditable(status === "minor");
+
+                            sap.m.MessageToast.show(`New Campaign Generated: ${newCampaign}`);
+                            return;
+                        }
+
+                        // ===============================
+                        // MINOR REPAIR FLOW
+                        // ===============================
+                        if (status === "minor") {
+                            minorRepairInput.setEditable(true);
+
+                            if (existing?.curr_repair_status === "minor") {
+                                const next = existing.curr_minor_repair_status + 1;
+
+                                if (![1, 2, 3].includes(next)) {
+                                    sap.m.MessageToast.show("Invalid Minor Repair Transition");
+                                    return;
+                                }
+
+                                minorRepairInput.setValue(next);
+                                oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, next);
+                            } else {
+                                minorRepairInput.setValue(1);
+                                oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 1);
+                            }
+                        }
+
+                        // ===============================
+                        // MAJOR REPAIR FLOW
+                        // ===============================
+                        if (status === "major") {
+                            minorRepairInput.setValue(0);
+                            minorRepairInput.setEditable(false);
+                            oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 0);
+                        }
                     },
                     items: [
                         new sap.ui.core.Item({ key: "major", text: "Major" }),
@@ -703,33 +845,20 @@ sap.ui.define([
                     ]
                 });
 
-                const minorRepairInput = new sap.m.Input({
-                    type: "Number",
-                    value: line.curr_minor_repair_status || 0,
-                    width: "100%",
-                    editable: true,
-                    liveChange: e => {
-                        oModel.setProperty(
-                            `/lines/${index}/campaign/minor_repair_count`,
-                            parseInt(e.getParameter("value") || 0, 10)
-                        );
-                    }
-                });
-
+                // -------------------------
+                // Stop Campaign Button
+                // -------------------------
                 const stopCampaignBtn = new sap.m.Button({
                     text: "Stop Campaign",
                     type: "Reject",
                     visible: true,
                     press: () => {
-
                         sap.m.MessageBox.confirm("Are you sure you want to stop the campaign?", {
                             onClose: sAction => {
                                 if (sAction === sap.m.MessageBox.Action.OK) {
-
                                     oModel.setProperty(`/lines/${index}/campaign/campaign_no`, "");
                                     oModel.setProperty(`/lines/${index}/campaign/repair_status`, "");
                                     oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 0);
-
                                     oModel.setProperty(`/lines/${index}/curr_campaign`, "");
                                     oModel.setProperty(`/lines/${index}/curr_repair_status`, "");
                                     oModel.setProperty(`/lines/${index}/curr_minor_repair_status`, 0);
@@ -739,46 +868,26 @@ sap.ui.define([
                     }
                 });
 
-
                 const repairGrid = new sap.ui.layout.Grid({
                     defaultSpan: "L4 M6 S12",
                     content: [
-                        new sap.m.VBox({
-                            items: [
-                                new sap.m.Label({ text: "Campaign No", design: "Bold" }),
-                                campaignInput
-                            ]
-                        }),
-                        new sap.m.VBox({
-                            items: [
-                                new sap.m.Label({ text: "Repair Status", design: "Bold" }),
-                                repairStatusCombo
-                            ]
-                        }),
-                        new sap.m.VBox({
-                            items: [
-                                new sap.m.Label({ text: "Minor Repair Status", design: "Bold" }),
-                                minorRepairInput
-                            ]
-                        }),
-                        new sap.m.VBox({
-                            alignItems: "Start",
-                            justifyContent: "End",
-                            items: [stopCampaignBtn]
-                        })
+                        new sap.m.VBox({ items: [new sap.m.Label({ text: "Campaign No", design: "Bold" }), campaignInput] }),
+                        new sap.m.VBox({ items: [new sap.m.Label({ text: "Repair Status", design: "Bold" }), repairStatusCombo] }),
+                        new sap.m.VBox({ items: [new sap.m.Label({ text: "Minor Repair Status", design: "Bold" }), minorRepairInput] }),
+                        new sap.m.VBox({ alignItems: "Start", justifyContent: "End", items: [stopCampaignBtn] })
                     ]
                 }).addStyleClass("sapUiSmallMarginTop");
 
-                panel.addContent(
-                    new sap.m.VBox({
-                        items: [lineGrid, repairGrid]
-                    }).addStyleClass("sapUiSmallMargin")
-                );
-
+                panel.addContent(new sap.m.VBox({ items: [lineGrid, repairGrid] }).addStyleClass("sapUiSmallMargin"));
                 container.addItem(panel);
 
+                // -------------------------
+                // Add to model array
+                // -------------------------
                 aLinesModel.push({
+                    id: line.ID || null,
                     line_name: line.line_name || "",
+                    lineNameInput,       // reference to input for payload
                     spgCount: line.no_of_spg_sensors || 0,
                     mudgunCount: line.no_of_mudgun_sensors || 0,
                     spgSensors: [],
@@ -794,8 +903,10 @@ sap.ui.define([
             });
 
             oModel.setProperty("/lines", aLinesModel);
-        }
-        ,
+        },
+
+
+
         // ========================= SPG HANDLER ============================
         _handleSpgChange: function (lineIndex, oEvent) {
 
@@ -854,29 +965,8 @@ sap.ui.define([
 
             line.mudgunCount = count;
         },
-
-        _generateCampaignNoForLine: function (lineObj, campaignInput) {
-            $.ajax({
-                url: "/odata/v4/site-management/campaign",
-                method: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({}),
-
-                success: res => {
-                    lineObj.campaignNo = res.camp_no;
-                    campaignInput.setValue(res.camp_no);
-                },
-
-                error: () => {
-                    sap.m.MessageToast.show("Failed to generate Campaign No");
-                }
-            });
-        },
-
-
         // ========================= SAVE ============================
         onSave: function () {
-
             const oModel = this.getView().getModel();
             const data = oModel.getData();
             const sMode = this.byId("modeSelector")?.getSelectedKey();
@@ -888,81 +978,138 @@ sap.ui.define([
                 productionLines: []
             };
 
-            (data.lines || []).forEach(line => {
+            const campaignPayload = [];
 
+            (data.lines || []).forEach(line => {
                 const currCampaign = line.campaign || {};
 
                 const lineEntry = {
                     line_name: line.line_name,
                     no_of_spg_sensors: line.spgCount,
                     no_of_mudgun_sensors: line.mudgunCount,
-
                     curr_campaign: currCampaign.campaign_no || null,
                     curr_repair_status: currCampaign.repair_status || null,
                     curr_minor_repair_status: currCampaign.minor_repair_count || 0,
-
-                    sensors: []
+                    sensors: [
+                        ...(line.spgSensors || []).map(name => ({ sensor_name: name, sensor_type: "SPG" })),
+                        ...(line.mudgunSensors || []).map(name => ({ sensor_name: name, sensor_type: "MUDGUN" }))
+                    ]
                 };
 
-                (line.spgSensors || []).forEach(val => {
-                    if (val) {
-                        lineEntry.sensors.push({
-                            sensor_name: val,
-                            sensor_type: "SPG"
-                        });
-                    }
-                });
-
-                (line.mudgunSensors || []).forEach(val => {
-                    if (val) {
-                        lineEntry.sensors.push({
-                            sensor_name: val,
-                            sensor_type: "MUDGUN"
-                        });
-                    }
-                });
-
                 payload.productionLines.push(lineEntry);
+
+                // Add campaign to payload
+                if (currCampaign?.campaign_no) {
+                    campaignPayload.push({
+                        campaign_no: currCampaign.campaign_no,
+                        repair_status: currCampaign.repair_status || null,
+                        minor_repair_count: currCampaign.minor_repair_count || 0,
+                        site_id: data.site_id || null,
+                        start_date: currCampaign.start_date || null,
+                        end_date: currCampaign.end_date || null,
+                        isActive: currCampaign.isActive !== undefined ? currCampaign.isActive : true,
+                        Status: currCampaign.Status || "Open",
+                        customer_name: data.customer,
+                        location: data.location,
+                        runner_id: data.runnerId,
+                        productionLineName: line.line_name
+                    });
+                }
             });
 
             if (sMode === "create") {
-
+                // Create site + campaigns as before
                 $.ajax({
                     url: "/odata/v4/site-management/siteMaster",
                     method: "POST",
                     contentType: "application/json",
                     data: JSON.stringify(payload),
-                    success: () => {
+                    success: (res) => {
                         sap.m.MessageToast.show("Site created successfully");
+
+                        campaignPayload.forEach(camp => {
+                            $.ajax({
+                                url: "/odata/v4/site-management/campaign",
+                                method: "POST",
+                                contentType: "application/json",
+                                data: JSON.stringify(camp),
+                                success: () => console.log("Campaign created:", camp.campaign_no),
+                                error: xhr => console.error("Error creating campaign:", xhr)
+                            });
+                        });
                     },
                     error: xhr => {
-                        sap.m.MessageToast.show(
-                            xhr.responseJSON?.error?.message || "Error while creating site"
-                        );
+                        sap.m.MessageToast.show(xhr.responseJSON?.error?.message || "Error while creating site");
                         console.error(xhr);
                     }
                 });
-
             } else if (sMode === "maintain") {
-
-                $.ajax({
-                    url: `/odata/v4/site-management/siteMaster('${encodeURIComponent(data.site_id)}')`,
-                    method: "PATCH",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        customer_name: data.customer,
-                        location: data.location,
-                        runner_id: data.runnerId
-                    }),
-                    success: () => {
-                        sap.m.MessageToast.show("Site updated successfully");
-                    },
-                    error: xhr => {
-                        sap.m.MessageToast.show(
-                            xhr.responseJSON?.error?.message || "Error while updating site"
-                        );
-                        console.error(xhr);
+                (data.lines || []).forEach(line => {
+                    if (!line.id) {
+                        console.warn("Skipping line without ID:", line);
+                        return;
                     }
+
+                    const currCampaign = line.campaign || {};
+                    const existing = this.ExistingcampaignArray?.find(c => c.line_name === line.line_name);
+
+                    // ------------------------------
+                    // Compare current vs existing
+                    // ------------------------------
+                    const isLineChanged = !existing ||
+                        existing.curr_campaign !== currCampaign.campaign_no ||
+                        existing.curr_repair_status !== currCampaign.repair_status ||
+                        existing.curr_minor_repair_status !== currCampaign.minor_repair_count;
+
+                    if (!isLineChanged) {
+                        console.log("No change for line, skipping:", line.line_name);
+                        return; // Skip PATCH & POST
+                    }
+
+                    // Patch production line
+                    const linePayload = {
+                        curr_campaign: currCampaign.campaign_no || null,
+                        curr_repair_status: currCampaign.repair_status || null,
+                        curr_minor_repair_status: currCampaign.minor_repair_count || 0
+                    };
+
+                    $.ajax({
+                        url: `/odata/v4/site-management/siteProductionLine('${encodeURIComponent(line.id)}')`,
+                        method: "PATCH",
+                        contentType: "application/json",
+                        data: JSON.stringify(linePayload),
+                        success: () => {
+                            console.log("Production line updated:", line.line_name);
+
+                            // POST new campaign if curr_campaign exists
+                            if (currCampaign?.campaign_no) {
+                                const campPayload = {
+                                    campaign_no: currCampaign.campaign_no,
+                                    repair_status: currCampaign.repair_status || null,
+                                    minor_repair_count: currCampaign.minor_repair_count || 0,
+                                    site_id: data.site_id,
+                                    start_date: currCampaign.start_date || null,
+                                    end_date: currCampaign.end_date || null,
+                                    isActive: currCampaign.isActive !== undefined ? currCampaign.isActive : true,
+                                    Status: currCampaign.Status || "Open",
+                                    customer_name: data.customer,
+                                    location: data.location,
+                                    runner_id: data.runnerId,
+                                    productionLineName: line.line_name
+                                };
+
+                                $.ajax({
+                                    url: "/odata/v4/site-management/campaign",
+                                    method: "POST",
+                                    contentType: "application/json",
+                                    data: JSON.stringify(campPayload),
+                                    success: () => console.log("Campaign created:", campPayload.campaign_no),
+                                    error: xhr => console.error("Error creating campaign:", xhr)
+                                });
+                            }
+                        },
+                        error: xhr => console.error("Error updating production line:", line.line_name, xhr)
+                    });
                 });
             }
         }
@@ -982,5 +1129,30 @@ sap.ui.define([
             });
         }
         ,
+        _getCampaignNumber: function (customer, location, runnerId, lineName) {
+            return new Promise((resolve, reject) => {
+                const url = `/odata/v4/site-management/generateCampaignNumber(` +
+                    `customer_name='${encodeURIComponent(customer)}',` +
+                    `location='${encodeURIComponent(location)}',` +
+                    `runner_id='${encodeURIComponent(runnerId)}',` +
+                    `line_name='${encodeURIComponent(lineName)}')`;
+
+                $.ajax({
+                    url: url,
+                    method: "GET",
+                    contentType: "application/json",
+                    success: res => {
+                        // Assuming API returns { value: "CAM123" }
+                        resolve(res?.value || "");
+                    },
+                    error: xhr => {
+                        console.error("Error generating campaign number", xhr);
+                        reject(xhr);
+                    }
+                });
+            });
+        }
+
+
     });
 });

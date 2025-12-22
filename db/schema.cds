@@ -40,12 +40,19 @@ entity Campaign : cuid, managed {
   campaign_no        : String(50);
   repair_status      : String(20);
   minor_repair_count : Integer;
+  site_id            : String(100);
 
   start_date         : DateTime;
   end_date           : DateTime;
 
-  isActive            :Boolean;
+  isActive           : Boolean;
+  Status             : String(10);
 
+  customer_name      : String(100);
+  location           : String(100);
+  runner_id          : String(20);
+
+  productionLineName : String(100);
   productionLine     : Association to SiteProductionLine;
 }
 
@@ -80,7 +87,7 @@ entity SensorReading : managed {
   key productionLineName       : String(100);
   key reading_date             : Date;
   key shift_code               : String(10);
-  key sensor_name               :String(100);
+  key sensor_name              : String(100);
 
 
       curr_campaign            : String(50);
