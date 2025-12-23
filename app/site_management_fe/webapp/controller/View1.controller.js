@@ -801,7 +801,6 @@ sap.ui.define([
 
                             oModel.refresh(true);
 
-                            minorRepairInput.setValue(0);
                             minorRepairInput.setEditable(status === "minor");
 
                             sap.m.MessageToast.show(`New Campaign Generated: ${newCampaign}`);
@@ -811,24 +810,24 @@ sap.ui.define([
                         // ===============================
                         // MINOR REPAIR FLOW
                         // ===============================
-                        if (status === "minor") {
-                            minorRepairInput.setEditable(true);
+                        // if (status === "minor") {
+                        //     minorRepairInput.setEditable(true);
 
-                            if (existing?.curr_repair_status === "minor") {
-                                const next = existing.curr_minor_repair_status + 1;
+                        //     if (existing?.curr_repair_status === "minor") {
+                        //         // const next = existing.curr_minor_repair_status ;
 
-                                if (![1, 2, 3].includes(next)) {
-                                    sap.m.MessageToast.show("Invalid Minor Repair Transition");
-                                    return;
-                                }
+                        //         // if (![1, 2, 3].includes(next)) {
+                        //         //     sap.m.MessageToast.show("Invalid Minor Repair Transition");
+                        //         //     return;
+                        //         // }
 
-                                minorRepairInput.setValue(next);
-                                oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, next);
-                            } else {
-                                minorRepairInput.setValue(1);
-                                oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 1);
-                            }
-                        }
+                        //         // minorRepairInput.setValue(next);
+                        //         // oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, next);
+                        //     } else {
+                        //         minorRepairInput.setValue(1);
+                        //         oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 1);
+                        //     }
+                        // }
 
                         // ===============================
                         // MAJOR REPAIR FLOW
@@ -1079,6 +1078,7 @@ sap.ui.define([
                         contentType: "application/json",
                         data: JSON.stringify(linePayload),
                         success: () => {
+                            sap.m.MessageToast.show("Site Updated successfully");
                             console.log("Production line updated:", line.line_name);
 
                             // POST new campaign if curr_campaign exists
@@ -1113,8 +1113,6 @@ sap.ui.define([
                 });
             }
         }
-
-
         ,
         // ========================= RESET ============================
         onReset: function () {

@@ -19,13 +19,13 @@ sap.ui.define([
         },
 
         onProductionPress: function () {
-            MessageToast.show("Production tile clicked");
+            // MessageToast.show("Production tile clicked");
              this.getOwnerComponent().getRouter().navTo("RouteView2");
         },
 
         onTemperaturePress: function () {
              this.getOwnerComponent().getRouter().navTo("RouteView3");
-            MessageToast.show("Temperature tile clicked");
+            // MessageToast.show("Temperature tile clicked");
         }
 
     });
