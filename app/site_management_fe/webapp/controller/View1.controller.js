@@ -9,14 +9,26 @@ sap.ui.define([
     return Controller.extend("com.trl.sitemanagementfe.controller.View1", {
 
         onInit: function () {
+            // Existing initialization
             this._initModel();
             this._loadDropdowns();
 
             // On page load, disable everything except Mode
             this._setFieldsEditable(false);
-        }
 
-        ,
+            // Attach router to clear page on navigation
+            const oRouter = this.getOwnerComponent().getRouter();
+            oRouter.getRoute("RouteView1").attachPatternMatched(
+                this._onRouteMatched,
+                this
+            );
+        },
+
+        _onRouteMatched: function () {
+            this._clearPage();
+        },
+
+
         onAfterRendering: async function () {
 
             const oModel = this.getOwnerComponent().getModel();
@@ -810,24 +822,24 @@ sap.ui.define([
                         // ===============================
                         // MINOR REPAIR FLOW
                         // ===============================
-                        // if (status === "minor") {
-                        //     minorRepairInput.setEditable(true);
+                        if (status === "minor") {
+                            minorRepairInput.setEditable(true);
 
-                        //     if (existing?.curr_repair_status === "minor") {
-                        //         // const next = existing.curr_minor_repair_status ;
+                            if (existing?.curr_repair_status === "minor") {
+                                // const next = existing.curr_minor_repair_status ;
 
-                        //         // if (![1, 2, 3].includes(next)) {
-                        //         //     sap.m.MessageToast.show("Invalid Minor Repair Transition");
-                        //         //     return;
-                        //         // }
+                                // if (![1, 2, 3].includes(next)) {
+                                //     sap.m.MessageToast.show("Invalid Minor Repair Transition");
+                                //     return;
+                                // }
 
-                        //         // minorRepairInput.setValue(next);
-                        //         // oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, next);
-                        //     } else {
-                        //         minorRepairInput.setValue(1);
-                        //         oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 1);
-                        //     }
-                        // }
+                                // minorRepairInput.setValue(next);
+                                // oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, next);
+                            } else {
+                            }
+                            minorRepairInput.setValue(1);
+                            oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 1);
+                        }
 
                         // ===============================
                         // MAJOR REPAIR FLOW
@@ -1149,7 +1161,36 @@ sap.ui.define([
                     }
                 });
             });
-        }
+        },
+        _clearPage: function () {
+            // 1️⃣ Reset the model
+            this.getView().getModel().setData(this._getEmptyData());
+
+            // 2️⃣ Clear unbound / special controls
+            this.byId("modeSelector").setSelectedKey("");
+            this.byId("topName").setValue("");
+            this.byId("customer").setSelectedKey("");
+            this.byId("location").setSelectedKey("");
+            this.byId("runnerId").setValue("");
+            this.byId("lineCount").setValue("");
+
+            // 3️⃣ Clear dynamic production lines
+            this.byId("linesContainer").removeAllItems();
+
+            // 4️⃣ Reset editable state as needed
+            this._setFieldsEditable(false);
+        },
+        _getEmptyData: function () {
+            return {
+                site_id: "",
+                customer: "",
+                location: "",
+                runnerId: "",
+                lineCount: "",
+                mode: ""
+            };
+        },
+
 
 
     });

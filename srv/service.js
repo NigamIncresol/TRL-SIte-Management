@@ -6,7 +6,7 @@ module.exports = cds.service.impl(async function () {
 
 
     this.before('CREATE', 'siteMaster', async (req) => {
-        // If site_id already provided, do NOT overwrite
+        // Respect manually provided site_id
         if (req.data.site_id) return;
 
         const { customer_name, location, runner_id } = req.data;
@@ -15,55 +15,45 @@ module.exports = cds.service.impl(async function () {
             req.error(400, "customer_name, location and runner_id are required");
         }
 
-        // Use FULL cleaned value (no length restriction)
+        // Normalize values
         const toCode = v =>
-            v
-                .replace(/[^a-zA-Z0-9]/g, "") // keep letters & numbers
-                .toUpperCase();
+            v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
 
-        const custCode = toCode(customer_name);
-        const locCode = toCode(location);
-        const runnerCode = toCode(runner_id);
+        const siteId =
+            `SITE-${toCode(customer_name)}-${toCode(location)}-${toCode(runner_id)}`;
 
         const tx = cds.transaction(req);
 
-        for (let attempt = 0; attempt < 5; attempt++) {
+        // Check if combination already exists
+        const existing = await tx.run(
+            SELECT.one.from(siteMaster)
+                .columns("site_id")
+                .where({ customer_name, location, runner_id })
+        );
 
-            const last = await tx.run(
-                SELECT.one.from(siteMaster)
-                    .columns("site_id")
-                    .where({ customer_name, location, runner_id })
-                    .orderBy({ createdAt: "desc" })
+        if (existing) {
+            req.error(
+                409,
+                `Site already exists for this combination (site_id: ${existing.site_id})`
             );
-
-            let nextSeq = 1;
-            if (last?.site_id) {
-                const match = last.site_id.match(/-(\d{3})$/);
-                if (match) nextSeq = Number(match[1]) + 1;
-            }
-
-            const seq = String(nextSeq).padStart(3, "0");
-
-            req.data.site_id =
-                `SITE-${custCode}-${locCode}-${runnerCode}-${seq}`;
         }
 
-        // Managing relation
+        // Assign new site_id
+        req.data.site_id = siteId;
+
+        // Propagate site_id to child entities
         if (req.data.siteProductionLines) {
             for (const line of req.data.siteProductionLines) {
                 if (line.sensors) {
                     for (const sensor of line.sensors) {
-                        sensor.site_site_id = req.data.site_id || null;
-                        console.log(
-                            `Assigning site_ID to Sensor "${sensor.sensor_name}"`
-                        );
+                        sensor.site_site_id = siteId;
                     }
                 }
             }
         }
     });
- 
-     this.on('generateCampaignNumber', async (req) => {
+
+    this.on('generateCampaignNumber', async (req) => {
 
         const { customer_name, location, runner_id, line_name } = req.data;
 

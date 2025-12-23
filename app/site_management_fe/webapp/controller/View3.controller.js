@@ -28,7 +28,18 @@ sap.ui.define([
             this.getView().setModel(oModel, "formData");
 
             this._isExistingSensorData = false;
+
+            // Attach route matched
+            const oRouter = this.getOwnerComponent().getRouter();
+            oRouter.getRoute("RouteView3").attachPatternMatched(
+                this._onRouteMatched,
+                this
+            );
         },
+        _onRouteMatched: function () {
+            this._clearPage();
+        },
+
 
         // Get current date in IST (yyyy-mm-dd)
         getISTDate: function () {
@@ -580,8 +591,37 @@ sap.ui.define([
             sap.m.MessageToast.show("Sensor stage submitted successfully");
             oModel.setProperty("/isSensorEditable", false);
             oModel.refresh();
-        }
+        },
+        _clearPage: function () {
+            // 1️: Reset formData model (clears bound fields)
+            const oFormModel = this.getView().getModel("formData");
+            oFormModel.setData(this._getEmptyFormData());
 
+            // 2️: Clear search inputs (not bound)
+            this.byId("siteId").setValue("");
+            this.byId("ProductionLineId1").setValue("");
+            this.byId("siteDate1").setValue(null);
+            this.byId("shiftSelect").setSelectedKey("");
+
+            // 3️: Clear dynamic content
+            this.byId("linesContainer").removeAllItems();
+        },
+        _getEmptyFormData: function () {
+            return {
+                shift: "",
+                siteMaster: {
+                    customer_name: "",
+                    location: "",
+                    runner_id: ""
+                },
+                campinfo: {
+                    campaign_no: "",
+                    repair_status: "",
+                    minor_repair_status: ""
+                },
+                isSensorEditable: false
+            };
+        },
 
     });
 });

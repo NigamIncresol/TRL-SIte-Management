@@ -28,9 +28,19 @@ sap.ui.define([
     return Controller.extend("com.trl.sitemanagementfe.controller.View2", {
 
         onInit: function () {
+            const oRouter = this.getOwnerComponent().getRouter();
+            oRouter.getRoute("RouteView2").attachPatternMatched(
+                this._onRouteMatched,
+                this
+            );
             this.getView().setModel(new JSONModel(), "view");
             this._isExistingDailyProduction = false;
         },
+        _onRouteMatched: function () {
+            this._clearPage();
+            
+        }
+        ,
         onAfterRendering: function () {
             this.getISTDate();
 
@@ -470,12 +480,14 @@ sap.ui.define([
                     dataType: "json",
                     data: JSON.stringify(payload),
                     success: () => {
-                        sap.m.MessageToast.show("Daily production updated");
+                        sap.m.MessageToast.show("Production Data updated");
+
                     },
                     error: (xhr) => {
                         const msg =
                             xhr.responseJSON?.error?.message || "Update failed";
                         sap.m.MessageBox.error(msg);
+
                     }
                 });
 
@@ -496,7 +508,8 @@ sap.ui.define([
                     data: JSON.stringify(postPayload),
                     success: () => {
                         this._isExistingDailyProduction = true;
-                        sap.m.MessageToast.show("Daily production created");
+                        sap.m.MessageToast.show("Production Data created");
+
                     },
                     error: (xhr) => {
                         const msg =
@@ -571,7 +584,41 @@ sap.ui.define([
                     }.bind(this)
                 }
             );
-        }
+        },
+        //Reset Page...............................................................................
+        _clearPage: function () {
+            // 1️: Reset view model (clears bound fields)
+            const oViewModel = this.getView().getModel("view");
+            oViewModel.setData(this._getEmptyViewData());
+
+            // 2️: Clear search inputs (not model bound)
+            this.byId("siteId").setValue("");
+            this.byId("ProductionLineId").setValue("");
+            this.byId("siteDate").setValue(null);
+            this.byId("remark").setValue("");
+
+            // 3️: Clear dynamic production lines
+            this.byId("linesContainer").removeAllItems();
+        },
+        //reset model also....
+        _getEmptyViewData: function () {
+            return {
+                siteMaster: {
+                    customer_name: "",
+                    location: "",
+                    runner_id: ""
+                },
+                campinfo: {
+                    campaign_no: "",
+                    repair_status: "",
+                    minor_repair_status: ""
+                },
+                isProductionEditable: false
+            };
+        },
+
+
+
 
     });
 });
