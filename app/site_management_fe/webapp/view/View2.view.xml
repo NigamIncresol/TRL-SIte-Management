@@ -9,6 +9,11 @@
         showHeader="true"
         class="sapUiContentPadding sitePageBackground"
     >
+    <Button
+                text=""
+                type="Back"
+                press=".onNavToHome"
+            />
         <!-- ========== SITE ID INPUT ========== -->
         <Panel
             headerText="Search"

@@ -9,18 +9,34 @@
         showHeader="true"
         class="sapUiContentPadding sitePageBackground"
     >
-    <VBox width="300px" class="sapUiSmallMarginBottom sapUiSmallMarginBegin">
-    <Label text="Mode" />
-    <ComboBox
-        id="modeSelector"
-        selectionChange="onModeChange"
-        width="100%">
-        <items>
-            <core:Item key="create" text="Create New" />
-            <core:Item key="maintain" text="Maintain" />
-        </items>
-    </ComboBox>
-</VBox>
+        <VBox
+            width="300px"
+            class="sapUiSmallMarginBottom sapUiSmallMarginBegin"
+        >
+            <Button
+                text=""
+                type="Back"
+                press=".onNavToHome"
+            />
+
+            <Label text="Mode" />
+            <ComboBox
+                id="modeSelector"
+                selectionChange="onModeChange"
+                width="100%"
+            >
+                <items>
+                    <core:Item
+                        key="create"
+                        text="Create New"
+                    />
+                    <core:Item
+                        key="maintain"
+                        text="Maintain"
+                    />
+                </items>
+            </ComboBox>
+        </VBox>
 
         <HBox
             justifyContent="Start"
@@ -77,7 +93,7 @@
                     <ComboBox
                         id="customer"
                         selectedKey="{/customer}"
-                         width="100%" 
+                        width="100%"
                     />
                 </VBox>
 
@@ -86,7 +102,7 @@
                     <ComboBox
                         id="location"
                         selectedKey="{/location}"
-                          width="100%" 
+                        width="100%"
                     />
                 </VBox>
 

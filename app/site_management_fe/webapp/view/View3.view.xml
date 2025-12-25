@@ -9,6 +9,7 @@
         showHeader="true"
         class="sapUiContentPadding sitePageBackground"
     >
+
         <!-- ========== HEADER ========== -->
         <customHeader>
             <Bar class="headerBarFix">
@@ -32,6 +33,11 @@
                 </contentMiddle>
             </Bar>
         </customHeader>
+        <Button
+                text=""
+                type="Back"
+                press=".onNavToHome"
+            />
 
         <!-- DATE / TIME / SHIFT ROW -->
         <!-- <HBox

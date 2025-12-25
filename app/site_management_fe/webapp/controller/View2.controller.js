@@ -24,10 +24,11 @@ sap.ui.define([
     MessageBox
 ) {
     "use strict";
-
+    let oODataModel;
     return Controller.extend("com.trl.sitemanagementfe.controller.View2", {
 
         onInit: function () {
+            oODataModel = this.getOwnerComponent().getModel();
             const oRouter = this.getOwnerComponent().getRouter();
             oRouter.getRoute("RouteView2").attachPatternMatched(
                 this._onRouteMatched,
@@ -38,7 +39,7 @@ sap.ui.define([
         },
         _onRouteMatched: function () {
             this._clearPage();
-            
+
         }
         ,
         onAfterRendering: function () {
@@ -109,25 +110,30 @@ sap.ui.define([
                 oView.addDependent(this._oSiteVHDialog);
             }
 
-            // Fetch SiteMaster data
-            $.ajax({
-                url: "/odata/v4/site-management/siteMaster",
-                method: "GET",
-                success: (res) => {
-                    const aSites = res?.value || [];
+            // Fetch SiteMaster data using OData V4
 
-                    const oModel = new sap.ui.model.json.JSONModel({
-                        sites: aSites
-                    });
+            // Bind list
+            const oListBinding = oODataModel.bindList("/siteMaster");
 
-                    this._oSiteVHDialog.setModel(oModel);
-                    this._oSiteVHDialog.open();
-                },
-                error: (xhr) => {
-                    sap.m.MessageToast.show("Failed to load Site IDs");
-                    console.error(xhr);
-                }
+            // Request data
+            oListBinding.requestContexts().then(aContexts => {
+
+                const aSites = aContexts.map(oCtx => oCtx.getObject());
+
+                const oModel = new sap.ui.model.json.JSONModel({
+                    sites: aSites
+                });
+
+                this._oSiteVHDialog.setModel(oModel);
+                this._oSiteVHDialog.open();
+
+            }).catch(err => {
+
+                sap.m.MessageToast.show("Failed to load Site IDs");
+                console.error(err);
+
             });
+
         },
         _onSiteSearch: function (oEvent) {
             const sValue = oEvent.getParameter("value");
@@ -200,27 +206,41 @@ sap.ui.define([
             }
 
             // Fetch SiteMaster data
-            $.ajax({
-                url: `/odata/v4/site-management/siteMaster(site_id='${enteredSiteId}')?$expand=productionLines`,
-                method: "GET",
-                success: (res) => {
-                    console.log("received production data", res.productionLines);
 
-                    this.siteMasterCompleteData = res; //storing the whole details for future use
-                    const aProds = res.productionLines || [];
 
-                    const oModel = new sap.ui.model.json.JSONModel({
-                        prods: aProds
-                    });
-
-                    this._oProdVHDialog.setModel(oModel);
-                    this._oProdVHDialog.open();
-                },
-                error: (xhr) => {
-                    sap.m.MessageToast.show("Failed to load production lines.");
-                    console.error(xhr);
+            // Bind context with $expand
+            const oContextBinding = oODataModel.bindContext(
+                `/siteMaster(site_id='${enteredSiteId}')`,
+                null,
+                {
+                    $expand: {
+                        productionLines: true
+                    }
                 }
+            );
+
+            // Request data
+            oContextBinding.requestObject().then(res => {
+
+                console.log("received production data", res.productionLines);
+
+                // store whole response for future use
+                this.siteMasterCompleteData = res;
+
+                const aProds = res.productionLines || [];
+
+                const oModel = new sap.ui.model.json.JSONModel({
+                    prods: aProds
+                });
+
+                this._oProdVHDialog.setModel(oModel);
+                this._oProdVHDialog.open();
+
+            }).catch(err => {
+                sap.m.MessageToast.show("Failed to load production lines.");
+                console.error(err);
             });
+
         },
         _onProdLineSearch: function (oEvent) {
             const sValue = oEvent.getParameter("value");
@@ -271,36 +291,33 @@ sap.ui.define([
                 return;
             }
 
-            const ajaxPromise = (url) => {
-                return new Promise((resolve, reject) => {
-                    $.ajax({
-                        url: url,
-                        method: "GET",
-                        dataType: "json",
-                        success: resolve,
-                        error: reject
-                    });
-                });
-            };
 
             const siteMaster = this.siteMasterCompleteData;
 
+            // Set site master info
             oViewModel.setProperty("/siteMaster", {
                 customer_name: siteMaster.customer_name,
                 location: siteMaster.location,
                 runner_id: siteMaster.runner_id
             });
 
-            const dailyDataFetchUrl =
-                `/odata/v4/site-management/dailyProduction(` +
-                `site_id='${encodeURIComponent(sSiteId)}',` +
-                `productionLineName='${encodeURIComponent(sProdLine)}',` +
+            /* ============================================================
+               GET dailyProduction (OData V4)
+               ============================================================ */
+
+            const sPath =
+                `/dailyProduction(` +
+                `site_id='${sSiteId}',` +
+                `productionLineName='${sProdLine}',` +
                 `production_date=${sDate}` +
                 `)`;
 
-            try {
-                const dailyResponse = await ajaxPromise(dailyDataFetchUrl);
+            const oContextBinding = oODataModel.bindContext(sPath);
 
+            try {
+                const dailyResponse = await oContextBinding.requestObject();
+
+                // Existing entry found
                 this._isExistingDailyProduction = true;
 
                 const isSubmitted = !!dailyResponse.productionStageCompleted;
@@ -310,14 +327,13 @@ sap.ui.define([
                     sap.m.MessageToast.show(
                         "Production stage already submitted. Editing disabled."
                     );
-                }
-                else {
+                } else {
                     sap.m.MessageToast.show(
                         "Existing production data found for the selected line/date"
                     );
                 }
 
-
+                // Render production line with existing data
                 this.renderProductionLine(siteMaster, dailyResponse);
 
                 this.byId("remark").setValue(dailyResponse.remarks || "");
@@ -329,8 +345,10 @@ sap.ui.define([
                 });
 
             } catch (err) {
-                if (err.status !== 404) {
-                    console.error("AJAX Error:", err.status, err.statusText);
+
+                // 404 → no daily production exists
+                if (err?.status !== 404) {
+                    console.error("OData Error:", err);
                     sap.m.MessageToast.show("Error fetching daily production data");
                     return;
                 }
@@ -342,6 +360,7 @@ sap.ui.define([
                 this._isExistingDailyProduction = false;
                 oViewModel.setProperty("/isProductionEditable", true);
 
+                // Render empty line
                 this.renderProductionLine(siteMaster, null);
 
                 const matchingLine = siteMaster.productionLines.find(
@@ -467,31 +486,50 @@ sap.ui.define([
                 curr_minor_repair_status: campInfo?.minor_repair_status || 0
             };
 
+
+
             if (this._isExistingDailyProduction) {
-                const keyPredicate =
-                    `site_id='${encodeURIComponent(siteId)}',` +
-                    `productionLineName='${encodeURIComponent(prodLineName)}',` +
-                    `production_date=${prodDate}`;
 
-                $.ajax({
-                    url: `/odata/v4/site-management/dailyProduction(${keyPredicate})`,
-                    method: "PATCH",
-                    contentType: "application/json",
-                    dataType: "json",
-                    data: JSON.stringify(payload),
-                    success: () => {
-                        sap.m.MessageToast.show("Production Data updated");
+                /* ================= PATCH dailyProduction ================= */
 
-                    },
-                    error: (xhr) => {
-                        const msg =
-                            xhr.responseJSON?.error?.message || "Update failed";
-                        sap.m.MessageBox.error(msg);
+                const sPath =
+                    `/dailyProduction(` +
+                    `site_id='${siteId}',` +
+                    `productionLineName='${prodLineName}',` +
+                    `production_date=${prodDate}` +
+                    `)`;
 
-                    }
+                const oContextBinding = oODataModel.bindContext(sPath);
+
+                oContextBinding.requestObject().then(() => {
+
+                    const oContext = oContextBinding.getBoundContext();
+
+                    // set each property (PATCH)
+                    Object.keys(payload).forEach(key => {
+                        oContext.setProperty(key, payload[key]);
+                    });
+
+                    // submit PATCH
+                    return oODataModel.submitBatch(
+                        oContextBinding.getUpdateGroupId()
+                    );
+
+                }).then(() => {
+
+                    sap.m.MessageToast.show("Production Data updated");
+
+                }).catch(err => {
+
+                    const msg =
+                        err?.message || "Update failed";
+                    sap.m.MessageBox.error(msg);
                 });
 
             } else {
+
+                /* ================= POST dailyProduction ================= */
+
                 const postPayload = {
                     site_id: siteId,
                     productionLineName: prodLineName,
@@ -500,24 +538,22 @@ sap.ui.define([
                     ...payload
                 };
 
-                $.ajax({
-                    url: "/odata/v4/site-management/dailyProduction",
-                    method: "POST",
-                    contentType: "application/json",
-                    dataType: "json",
-                    data: JSON.stringify(postPayload),
-                    success: () => {
-                        this._isExistingDailyProduction = true;
-                        sap.m.MessageToast.show("Production Data created");
+                const oListBinding = oODataModel.bindList("/dailyProduction");
+                const oContext = oListBinding.create(postPayload);
 
-                    },
-                    error: (xhr) => {
-                        const msg =
-                            xhr.responseJSON?.error?.message || "Create failed";
-                        sap.m.MessageBox.error(msg);
-                    }
+                oContext.created().then(() => {
+
+                    this._isExistingDailyProduction = true;
+                    sap.m.MessageToast.show("Production Data created");
+
+                }).catch(err => {
+
+                    const msg =
+                        err?.message || "Create failed";
+                    sap.m.MessageBox.error(msg);
                 });
             }
+
         }
 
         ,
@@ -549,37 +585,50 @@ sap.ui.define([
                             return;
                         }
 
-                        const patchUrl = `/odata/v4/site-management/dailyProduction(` +
-                            `site_id='${encodeURIComponent(sSiteId)}',` +
-                            `productionLineName='${encodeURIComponent(sProdLine)}',` +
-                            `production_date=${encodeURIComponent(sDate)}` +
+                        const oODataModel = this.getOwnerComponent().getModel();
+
+                        /* ================= PATCH dailyProduction ================= */
+
+                        const sPath =
+                            `/dailyProduction(` +
+                            `site_id='${sSiteId}',` +
+                            `productionLineName='${sProdLine}',` +
+                            `production_date=${sDate}` +
                             `)`;
 
-                        const payload = {
-                            productionStageCompleted: true
-                        };
+                        const oContextBinding = oODataModel.bindContext(sPath);
 
-                        $.ajax({
-                            url: patchUrl,
-                            method: "PATCH",
-                            contentType: "application/json",
-                            data: JSON.stringify(payload),
-                            success: function () {
-                                sap.m.MessageToast.show("Production submitted successfully");
+                        // Load context first
+                        oContextBinding.requestObject().then(() => {
 
-                                // Lock UI after submission
-                                oViewModel.setProperty("/isProductionEditable", false);
-                            },
-                            error: function (xhr) {
-                                let errMsg = "Submission failed";
-                                try {
-                                    const err = JSON.parse(xhr.responseText);
-                                    errMsg = err?.error?.message || errMsg;
-                                } catch (e) { }
-                                sap.m.MessageBox.error(errMsg);
-                                console.error(xhr);
+                            const oContext = oContextBinding.getBoundContext();
+
+                            // Set property (PATCH)
+                            oContext.setProperty("productionStageCompleted", true);
+
+                            // Submit PATCH
+                            return oODataModel.submitBatch(
+                                oContextBinding.getUpdateGroupId()
+                            );
+
+                        }).then(() => {
+
+                            sap.m.MessageToast.show("Production submitted successfully");
+
+                            // Lock UI after submission
+                            oViewModel.setProperty("/isProductionEditable", false);
+
+                        }).catch(err => {
+
+                            let errMsg = "Submission failed";
+                            if (err?.message) {
+                                errMsg = err.message;
                             }
+
+                            sap.m.MessageBox.error(errMsg);
+                            console.error(err);
                         });
+
 
                     }.bind(this)
                 }
@@ -616,6 +665,11 @@ sap.ui.define([
                 isProductionEditable: false
             };
         },
+        onNavToHome: function () {
+            const oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+            oRouter.navTo("Home");
+        }
+
 
 
 

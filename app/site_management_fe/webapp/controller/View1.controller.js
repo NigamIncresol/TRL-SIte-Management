@@ -243,45 +243,58 @@ sap.ui.define([
             //reset on start
             this._previousMinorRepairStatus = null;
             this._oldStatus = null;
-            $.ajax({
-                url: `/odata/v4/site-management/siteMaster('${encodeURIComponent(sSiteId)}')?$expand=productionLines($expand=sensors)`,
+            const oODataModel = this.getOwnerComponent().getModel();
 
-                method: "GET",
-                success: res => {
-                    if (res) {
-                        console.log("received date responese", res)
-                        this.ExistingcampaignArray = res.productionLines.map(line => {
-                            return {
-                                line_name: line.line_name,
-                                curr_campaign: line.curr_campaign,
-                                curr_repair_status: line.curr_repair_status,
-                                curr_minor_repair_status: line.curr_minor_repair_status
-                            };
-                        });
-
-                        // Populate form with site data
-                        const oModel = this.getView().getModel();
-                        oModel.setProperty("/site_id", res.site_id);
-                        oModel.setProperty("/customer", res.customer_name);
-                        oModel.setProperty("/location", res.location);
-                        oModel.setProperty("/runnerId", res.runner_id);
-
-                        oModel.setProperty("/lineCount", res.productionLines.length);
-
-                        // Render lines as read-only
-                        this._renderProductionLines(res.productionLines, true);
-
-
-                    } else {
-                        MessageToast.show("Site not found.");
-                        this._clearForm(); // Clear form if site not found
+            // Bind context with expand (no encodeURIComponent)
+            const oContextBinding = oODataModel.bindContext(
+                `/siteMaster('${sSiteId}')`,
+                null,
+                {
+                    $expand: {
+                        productionLines: {
+                            $expand: {
+                                sensors: true
+                            }
+                        }
                     }
-                },
-                error: () => {
-                    MessageToast.show("Site not found.");
-                    this._clearForm(); // Clear form if site not found
                 }
+            );
+
+            // Request data
+            oContextBinding.requestObject().then(res => {
+
+                if (res) {
+                    console.log("received data response", res);
+
+                    this.ExistingcampaignArray = (res.productionLines || []).map(line => ({
+                        line_name: line.line_name,
+                        curr_campaign: line.curr_campaign,
+                        curr_repair_status: line.curr_repair_status,
+                        curr_minor_repair_status: line.curr_minor_repair_status
+                    }));
+
+                    // Populate form with site data
+                    const oModel = this.getView().getModel();
+                    oModel.setProperty("/site_id", res.site_id);
+                    oModel.setProperty("/customer", res.customer_name);
+                    oModel.setProperty("/location", res.location);
+                    oModel.setProperty("/runnerId", res.runner_id);
+
+                    oModel.setProperty("/lineCount", res.productionLines.length);
+
+                    // Render lines as read-only
+                    this._renderProductionLines(res.productionLines, true);
+
+                } else {
+                    sap.m.MessageToast.show("Site not found.");
+                    this._clearForm();
+                }
+
+            }).catch(() => {
+                sap.m.MessageToast.show("Site not found.");
+                this._clearForm();
             });
+
         }
 
         ,
@@ -319,24 +332,27 @@ sap.ui.define([
             }
 
             // Fetch SiteMaster data
-            $.ajax({
-                url: "/odata/v4/site-management/siteMaster",
-                method: "GET",
-                success: (res) => {
-                    const aSites = res?.value || [];
+            // Fetch SiteMaster data using OData V4
+            const oODataModel = this.getOwnerComponent().getModel();
 
-                    const oModel = new sap.ui.model.json.JSONModel({
-                        sites: aSites
-                    });
+            const oListBinding = oODataModel.bindList("/siteMaster");
 
-                    this._oSiteVHDialog.setModel(oModel);
-                    this._oSiteVHDialog.open();
-                },
-                error: (xhr) => {
-                    sap.m.MessageToast.show("Failed to load Site IDs");
-                    console.error(xhr);
-                }
+            oListBinding.requestContexts().then((aContexts) => {
+
+                const aSites = aContexts.map(oCtx => oCtx.getObject());
+
+                const oVHModel = new sap.ui.model.json.JSONModel({
+                    sites: aSites
+                });
+
+                this._oSiteVHDialog.setModel(oVHModel);
+                this._oSiteVHDialog.open();
+
+            }).catch((err) => {
+                sap.m.MessageToast.show("Failed to load Site IDs");
+                console.error(err);
             });
+
         },
         _onSiteSearch: function (oEvent) {
             const sValue = oEvent.getParameter("value");
@@ -1030,30 +1046,38 @@ sap.ui.define([
 
             if (sMode === "create") {
                 // Create site + campaigns as before
-                $.ajax({
-                    url: "/odata/v4/site-management/siteMaster",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify(payload),
-                    success: (res) => {
-                        sap.m.MessageToast.show("Site created successfully");
+                const oODataModel = this.getOwnerComponent().getModel();
 
-                        campaignPayload.forEach(camp => {
-                            $.ajax({
-                                url: "/odata/v4/site-management/campaign",
-                                method: "POST",
-                                contentType: "application/json",
-                                data: JSON.stringify(camp),
-                                success: () => console.log("Campaign created:", camp.campaign_no),
-                                error: xhr => console.error("Error creating campaign:", xhr)
+                // POST SiteMaster
+                const oSiteListBinding = oODataModel.bindList("/siteMaster");
+                const oSiteContext = oSiteListBinding.create(payload);
+
+                oSiteContext.created().then(() => {
+
+                    sap.m.MessageToast.show("Site created successfully");
+
+                    // POST campaigns one by one (same as your AJAX loop)
+                    const oCampaignListBinding = oODataModel.bindList("/campaign");
+
+                    campaignPayload.forEach(camp => {
+                        const oCampContext = oCampaignListBinding.create(camp);
+
+                        oCampContext.created()
+                            .then(() => {
+                                console.log("Campaign created:", camp.campaign_no);
+                            })
+                            .catch(err => {
+                                console.error("Error creating campaign:", err);
                             });
-                        });
-                    },
-                    error: xhr => {
-                        sap.m.MessageToast.show(xhr.responseJSON?.error?.message || "Error while creating site");
-                        console.error(xhr);
-                    }
+                    });
+
+                }).catch(err => {
+                    sap.m.MessageToast.show(
+                        err?.message || "Error while creating site"
+                    );
+                    console.error(err);
                 });
+
             } else if (sMode === "maintain") {
                 (data.lines || []).forEach(line => {
                     if (!line.id) {
@@ -1084,44 +1108,64 @@ sap.ui.define([
                         curr_minor_repair_status: currCampaign.minor_repair_count || 0
                     };
 
-                    $.ajax({
-                        url: `/odata/v4/site-management/siteProductionLine('${encodeURIComponent(line.id)}')`,
-                        method: "PATCH",
-                        contentType: "application/json",
-                        data: JSON.stringify(linePayload),
-                        success: () => {
-                            sap.m.MessageToast.show("Site Updated successfully");
-                            console.log("Production line updated:", line.line_name);
+                    const oODataModel = this.getOwnerComponent().getModel();
 
-                            // POST new campaign if curr_campaign exists
-                            if (currCampaign?.campaign_no) {
-                                const campPayload = {
-                                    campaign_no: currCampaign.campaign_no,
-                                    repair_status: currCampaign.repair_status || null,
-                                    minor_repair_count: currCampaign.minor_repair_count || 0,
-                                    site_id: data.site_id,
-                                    start_date: currCampaign.start_date || null,
-                                    end_date: currCampaign.end_date || null,
-                                    isActive: currCampaign.isActive !== undefined ? currCampaign.isActive : true,
-                                    Status: currCampaign.Status || "Open",
-                                    customer_name: data.customer,
-                                    location: data.location,
-                                    runner_id: data.runnerId,
-                                    productionLineName: line.line_name
-                                };
+                    /* ========= PATCH SiteProductionLine ========= */
 
-                                $.ajax({
-                                    url: "/odata/v4/site-management/campaign",
-                                    method: "POST",
-                                    contentType: "application/json",
-                                    data: JSON.stringify(campPayload),
-                                    success: () => console.log("Campaign created:", campPayload.campaign_no),
-                                    error: xhr => console.error("Error creating campaign:", xhr)
-                                });
-                            }
-                        },
-                        error: xhr => console.error("Error updating production line:", line.line_name, xhr)
+                    // 1️⃣ Bind context
+                    const oContextBinding = oODataModel.bindContext(
+                        `/siteProductionLine('${line.id}')`
+                    );
+
+                    // 2️⃣ Request context first
+                    oContextBinding.requestObject().then(() => {
+
+                        const oContext = oContextBinding.getBoundContext();
+
+                        // 3️⃣ Set properties (PATCH)
+                        Object.keys(linePayload).forEach(key => {
+                            oContext.setProperty(key, linePayload[key]);
+                        });
+
+                        // 4️⃣ Submit PATCH
+                        return oODataModel.submitBatch(oContextBinding.getUpdateGroupId());
+
+                    }).then(() => {
+
+                        sap.m.MessageToast.show("Site Updated successfully");
+                        console.log("Production line updated:", line.line_name);
+
+                        /* ========= POST Campaign (conditional) ========= */
+                        if (currCampaign?.campaign_no) {
+
+                            const campPayload = {
+                                campaign_no: currCampaign.campaign_no,
+                                repair_status: currCampaign.repair_status || null,
+                                minor_repair_count: currCampaign.minor_repair_count || 0,
+                                site_id: data.site_id,
+                                start_date: currCampaign.start_date || null,
+                                end_date: currCampaign.end_date || null,
+                                isActive: currCampaign.isActive !== undefined ? currCampaign.isActive : true,
+                                Status: currCampaign.Status || "Open",
+                                customer_name: data.customer,
+                                location: data.location,
+                                runner_id: data.runnerId,
+                                productionLineName: line.line_name
+                            };
+
+                            const oCampaignListBinding = oODataModel.bindList("/campaign");
+                            const oCampContext = oCampaignListBinding.create(campPayload);
+
+                            oCampContext.created()
+                                .then(() => console.log("Campaign created:", campPayload.campaign_no))
+                                .catch(err => console.error("Error creating campaign:", err));
+                        }
+
+                    }).catch(err => {
+                        console.error("Error updating production line:", line.line_name, err);
                     });
+
+
                 });
             }
         }
@@ -1140,28 +1184,30 @@ sap.ui.define([
         }
         ,
         _getCampaignNumber: function (customer, location, runnerId, lineName) {
-            return new Promise((resolve, reject) => {
-                const url = `/odata/v4/site-management/generateCampaignNumber(` +
-                    `customer_name='${encodeURIComponent(customer)}',` +
-                    `location='${encodeURIComponent(location)}',` +
-                    `runner_id='${encodeURIComponent(runnerId)}',` +
-                    `line_name='${encodeURIComponent(lineName)}')`;
+            const oODataModel = this.getOwnerComponent().getModel();
 
-                $.ajax({
-                    url: url,
-                    method: "GET",
-                    contentType: "application/json",
-                    success: res => {
-                        // Assuming API returns { value: "CAM123" }
-                        resolve(res?.value || "");
-                    },
-                    error: xhr => {
-                        console.error("Error generating campaign number", xhr);
-                        reject(xhr);
-                    }
+            // Build function path (NO encodeURIComponent needed)
+            const sPath =
+                `/generateCampaignNumber(` +
+                `customer_name='${customer}',` +
+                `location='${location}',` +
+                `runner_id='${runnerId}',` +
+                `line_name='${lineName}')`;
+
+            const oContextBinding = oODataModel.bindContext(sPath);
+
+            return oContextBinding.requestObject()
+                .then(oResult => {
+                    // For OData V4 primitive return
+                    // CAP returns: { value: "CAM123" }
+                    return oResult?.value || "";
+                })
+                .catch(err => {
+                    console.error("Error generating campaign number", err);
+                    throw err;
                 });
-            });
-        },
+        }
+        ,
         _clearPage: function () {
             // 1️⃣ Reset the model
             this.getView().getModel().setData(this._getEmptyData());
@@ -1190,6 +1236,11 @@ sap.ui.define([
                 mode: ""
             };
         },
+        onNavToHome: function () {
+            const oRouter = sap.ui.core.UIComponent.getRouterFor(this);
+            oRouter.navTo("Home");
+        }
+
 
 
 
