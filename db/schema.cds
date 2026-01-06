@@ -5,6 +5,14 @@ using {
 
 namespace trlmonitoring;
 
+entity CustomerMaster : cuid, managed {
+  customer_name : String(100);
+}
+
+entity LocationMaster : cuid, managed {
+  location_name : String(100);
+}
+
 entity SiteMaster : managed {
   key site_id         : String(100);
       customer_name   : String(100);

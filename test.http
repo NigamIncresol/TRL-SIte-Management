@@ -161,3 +161,19 @@ Accept: application/json
 
 
 
+### Create Location
+POST http://localhost:4004/odata/v4/site-management/locationMaster
+Content-Type: application/json
+
+{
+  "location_name": "Pune"
+}
+
+### Create Customer
+POST http://localhost:4004/odata/v4/site-management/customerMaster
+Content-Type: application/json
+
+{
+  "customer_name": "Jindal"
+}
+

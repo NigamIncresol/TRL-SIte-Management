@@ -196,45 +196,51 @@ sap.ui.define([
         ,
         _loadDropdowns: function () {
 
-            // === CUSTOMER DROPDOWN MODEL ===
-            const customerModel = new JSONModel({
-                items: [
-                    { key: "TRL", text: "TRL" },
-                    { key: "Dolvi", text: "Dolvi" },
-                    { key: "JSPL", text: "JSPL" }
-                ]
+          const oODataModel = this.getOwnerComponent().getModel();
+
+            // ===== CUSTOMER GET CALL =====
+            const oCustomerBinding = oODataModel.bindList("/customerMaster");
+
+            oCustomerBinding.requestContexts().then((aContexts) => {
+                const aCustomers = aContexts.map(oCtx => oCtx.getObject());
+
+                const oCustomerModel = new sap.ui.model.json.JSONModel({
+                    items: aCustomers
+                });
+
+                this.byId("customer").setModel(oCustomerModel, "customerModel");
+
+                this.byId("customer").bindItems({
+                    path: "customerModel>/items",
+                    template: new sap.ui.core.Item({
+                        key: "{customerModel>customer_name}",
+                        text: "{customerModel>customer_name}"
+                    })
+                });
             });
 
-            this.byId("customer").setModel(customerModel, "customerModel");
+            // ===== LOCATION GET CALL =====
+            const oLocationBinding = oODataModel.bindList("/locationMaster");
 
-            this.byId("customer").bindItems({
-                path: "customerModel>/items",
-                template: new sap.ui.core.Item({
-                    key: "{customerModel>key}",
-                    text: "{customerModel>text}"
-                })
-            });
+            oLocationBinding.requestContexts().then((aContexts) => {
+                const aLocations = aContexts.map(oCtx => oCtx.getObject());
 
+                const oLocationModel = new sap.ui.model.json.JSONModel({
+                    items: aLocations
+                });
 
-            // === LOCATION DROPDOWN MODEL ===
-            const locationModel = new JSONModel({
-                items: [
-                    { key: "Chennai", text: "Chennai" },
-                    { key: "Pune", text: "Pune" },
-                    { key: "Bangalore", text: "Bangalore" }
-                ]
-            });
+                this.byId("location").setModel(oLocationModel, "locationModel");
 
-            this.byId("location").setModel(locationModel, "locationModel");
-
-            this.byId("location").bindItems({
-                path: "locationModel>/items",
-                template: new sap.ui.core.Item({
-                    key: "{locationModel>key}",
-                    text: "{locationModel>text}"
-                })
+                this.byId("location").bindItems({
+                    path: "locationModel>/items",
+                    template: new sap.ui.core.Item({
+                        key: "{locationModel>location_name}",
+                        text: "{locationModel>location_name}"
+                    })
+                });
             });
         }
+
         ,
         onSiteIdChange: function (oEvent) {
             const sSiteId = oEvent.getSource().getValue().trim();
