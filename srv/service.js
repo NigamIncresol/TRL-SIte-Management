@@ -103,5 +103,52 @@ module.exports = cds.service.impl(async function () {
         return `CAMP-${custCode}-${locCode}-${runnerCode}-${lineCode}-${seq}`;
     });
 
+   this.on('getDailyProductionPivot', async (req) => {
+    const { site_id, fromDate, toDate } = req.data;
+
+    if (!site_id || !fromDate || !toDate) {
+        req.error(400, "site_id, fromDate, and toDate are required");
+    }
+
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    if (isNaN(from) || isNaN(to)) {
+        req.error(400, "fromDate and toDate must be valid dates");
+    }
+
+    const rows = await SELECT.from(dailyProduction)
+        .columns('production_date', 'productionLineName', 'production_data', 'erosion_data')
+        .where({ site_id })
+        .and('production_date', '>=', from)
+        .and('production_date', '<=', to)
+        .orderBy('production_date', 'productionLineName');
+
+    const pivot = {};
+    rows.forEach(r => {
+        let dateStr;
+        if (typeof r.production_date === 'string') {
+            dateStr = r.production_date.split('T')[0];
+        } else {
+            dateStr = r.production_date.toISOString().split('T')[0];
+        }
+
+        if (!pivot[dateStr]) pivot[dateStr] = { date: dateStr, totalProd: 0 };
+
+        pivot[dateStr][`${r.productionLineName}_prod`] =
+            (pivot[dateStr][`${r.productionLineName}_prod`] || 0) + r.production_data;
+
+        pivot[dateStr][`${r.productionLineName}_erosion`] =
+            (pivot[dateStr][`${r.productionLineName}_erosion`] || 0) + r.erosion_data;
+
+        pivot[dateStr].totalProd += r.production_data;
+    });
+
+    return Object.values(pivot);
+});
+
+
+
+
+
 });
 

@@ -108,3 +108,25 @@ entity SensorReading : managed {
       sensor                   : Association to Sensor;
       productionLine           : Association to SiteProductionLine;
 }
+
+entity Inventory : managed {
+  key siteId              : String(100);
+  key material            : String(50);
+  materialDescription : String(255);
+  quantity            : Decimal(15, 3);
+  batch               : String(50);
+}
+
+entity Consumption : managed {
+  key site_id                  : String(100);
+  key productionLineName       : String(100);
+  key consumption_date         : Date;
+  key material                 : String(50);
+      productionLine           : Association to SiteProductionLine;
+      curr_campaign            : String(50);
+      curr_repair_status       : String(20);
+      curr_minor_repair_status : Integer;
+      quantity                 : Decimal(15, 3);
+      batch                    : String(50);
+      remarks                  : String(255);
+}

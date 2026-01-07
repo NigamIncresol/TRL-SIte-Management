@@ -37,13 +37,14 @@ sap.ui.define([
     exportLibrary
 ) {
     "use strict";
-
+    let oODataModel;
     return Controller.extend("com.trl.sitemanagementfe.controller.Report", {
 
         /* =========================
            INIT
         ========================= */
         onInit: function () {
+            oODataModel = this.getOwnerComponent().getModel();
             this.getView().setModel(new JSONModel({}));
         },
 
@@ -59,109 +60,139 @@ sap.ui.define([
            FIND BUTTON
         ========================= */
         onFindPress: function () {
+            var sSiteId = this.byId("siteId").getValue();
+            var sFromDate = this.byId("fromDate").getDateValue();
+            var sToDate = this.byId("toDate").getDateValue();
 
-            /* ===== DATA (ONLY 3 PROD FIELDS) ===== */
-            const aReportData = [
-                { date: "2025-01-01", eastProd: 120, westProd: 95, southProd: 60, northProd: 70, eastErosion: 12, westErosion: 9, southErosion: 8, northErosion: 10, totalProd: 345 },
-                { date: "2025-01-02", eastProd: 118, westProd: 92, southProd: 58, northProd: 68, eastErosion: 11, westErosion: 8, southErosion: 7, northErosion: 9, totalProd: 336 },
-                { date: "2025-01-03", eastProd: 125, westProd: 100, southProd: 65, northProd: 75, eastErosion: 13, westErosion: 10, southErosion: 9, northErosion: 11, totalProd: 365 },
-                { date: "2025-01-04", eastProd: 130, westProd: 105, southProd: 68, northProd: 78, eastErosion: 14, westErosion: 11, southErosion: 10, northErosion: 12, totalProd: 381 },
-                { date: "2025-01-05", eastProd: 128, westProd: 0, southProd: 66, northProd: 76, eastErosion: 13, westErosion: 10, southErosion: 9, northErosion: 11, totalProd: 270 },
-                { date: "2025-01-06", eastProd: 132, westProd: 108, southProd: 70, northProd: 80, eastErosion: 14, westErosion: 11, southErosion: 10, northErosion: 12, totalProd: 390 },
-                { date: "2025-01-07", eastProd: 134, westProd: 110, southProd: 72, northProd: 82, eastErosion: 15, westErosion: 11, southErosion: 11, northErosion: 13, totalProd: 398 },
-                { date: "2025-01-08", eastProd: 136, westProd: 112, southProd: 74, northProd: 84, eastErosion: 15, westErosion: 12, southErosion: 11, northErosion: 13, totalProd: 406 },
-                { date: "2025-01-09", eastProd: 138, westProd: 114, southProd: 76, northProd: 86, eastErosion: 16, westErosion: 12, southErosion: 12, northErosion: 14, totalProd: 414 },
-                { date: "2025-01-10", eastProd: 140, westProd: 116, southProd: 78, northProd: 88, eastErosion: 16, westErosion: 13, southErosion: 12, northErosion: 14, totalProd: 422 }
-            ];
+            if (!sSiteId || !sFromDate || !sToDate) {
+                sap.m.MessageToast.show("Please fill all required fields!");
+                return;
+            }
 
+            // Format dates as yyyy-MM-dd
+            var fnFormatDate = function (d) {
+                return d.toISOString().split("T")[0];
+            };
 
+            // Bind context to OData V4 function import
+            var oContext = oODataModel.bindContext(
+                `/getDailyProductionPivot(site_id='${sSiteId}',fromDate='${fnFormatDate(sFromDate)}',toDate='${fnFormatDate(sToDate)}')`
+            );
 
+            // Call the API
+            oContext.requestObject().then(function (oResponse) {
+                // Extract the actual array from 'value'
+                var aReportData = oResponse.value || [];
+                console.log("API Pivot Data", aReportData);
 
-            const oModel = new JSONModel({ reportData: aReportData });
-            this.getView().setModel(oModel);
+                if (aReportData.length === 0) {
+                    sap.m.MessageToast.show("No data found for selected filters");
+                }
 
-            const oContainer = this.byId("tableContainer");
-            oContainer.removeAllItems();
+                // Create JSONModel
+                const oModel = new sap.ui.model.json.JSONModel({ reportData: aReportData });
+                this.getView().setModel(oModel);
 
-            /* =========================
-               DATA-DRIVEN TABLE
-               (Header fixed, rows scroll)
-            ========================= */
-            const oTable = new UiTable({
-                rows: "{/reportData}",
-                visibleRowCount: 8,
-                selectionMode: "None",
-                width: "100%",
-                class: "sapUiLargeMarginTop"
+                // Clear container
+                const oContainer = this.byId("tableContainer");
+                oContainer.removeAllItems();
+
+                /* =========================
+                   DATA-DRIVEN TABLE
+                ========================= */
+                const oTable = new sap.ui.table.Table({
+                    rows: "{/reportData}",
+                    visibleRowCount: 8,
+                    selectionMode: "None",
+                    width: "100%",
+                    class: "sapUiLargeMarginTop"
+                });
+
+                // Dynamically create columns from keys
+                if (aReportData.length > 0) {
+                    const aKeys = Object.keys(aReportData[0]);
+                    aKeys.forEach(function (sKey) {
+                        // Generate column label: remove special chars, underscores, split camelCase, uppercase
+                        const sLabel = sKey
+                            .replace(/_/g, " ")                   // underscores → space
+                            .replace(/([a-z])([A-Z])/g, "$1 $2") // split camelCase
+                            .replace(/[^a-zA-Z0-9 ]/g, "")       // remove special characters
+                            .toUpperCase();                       // all uppercase
+
+                        oTable.addColumn(new sap.ui.table.Column({
+                            label: new sap.m.Label({ text: sLabel }),
+                            template: new sap.m.Text({ text: `{${sKey}}` })
+                        }));
+                    });
+                }
+
+                oContainer.addItem(oTable);
+
+                // Add action buttons
+                const oButtonBox = new sap.m.HBox({
+                    class: "sapUiSmallMarginTop",
+                    alignItems: "Center",
+                    items: [
+                        new sap.m.Button({
+                            text: "View",
+                            type: "Emphasized",
+                            press: this.onViewChart.bind(this)
+                        }),
+                        new sap.m.ToolbarSpacer({ width: "1rem" }),
+                        new sap.m.Button({
+                            text: "Export",
+                            type: "Success",
+                            press: this.onExportExcel.bind(this)
+                        })
+                    ]
+                });
+                oContainer.addItem(oButtonBox);
+
+            }.bind(this)).catch(function (err) {
+                console.error(err);
+                sap.m.MessageToast.show("Error fetching data from API");
             });
-
-            /* =========================
-               CREATE COLUMNS FROM DATA
-            ========================= */
-            const aKeys = Object.keys(aReportData[0]);
-
-            aKeys.forEach(function (sKey) {
-                oTable.addColumn(new UiColumn({
-                    label: new Label({
-                        text: sKey
-                            .replace(/([A-Z])/g, " $1")   // eastProd → east Prod
-                            .replace(/^./, c => c.toUpperCase())
-                    }),
-                    template: new Text({
-                        text: `{${sKey}}`
-                    })
-                }));
-            });
-
-            oContainer.addItem(oTable);
-            const oButtonBox = new sap.m.HBox({
-                class: "sapUiSmallMarginTop",
-                alignItems: "Center",
-                items: [
-                    new sap.m.Button({
-                        text: "View",
-                        type: "Emphasized",
-                        press: this.onViewChart.bind(this)
-                    }),
-                    new sap.m.ToolbarSpacer({ width: "1rem" }), // 👈 SPACE
-                    new sap.m.Button({
-                        text: "Export",
-                        type: "Success",
-                        press: this.onExportExcel.bind(this)
-                    })
-                ]
-            });
-
-            oContainer.addItem(oButtonBox);
+        }
 
 
-
-        },
+        ,
         onViewChart: function () {
 
             const oModel = this.getView().getModel();
             const aReportData = oModel.getProperty("/reportData");
 
             if (!aReportData || !aReportData.length) {
+                console.warn("No report data available");
                 return;
             }
 
             /* =========================
-               1. DETECT KEYS (DATA-DRIVEN)
+               1. DETECT KEYS (DATA-DRIVEN, CASE-INSENSITIVE)
             ========================= */
             const aKeys = Object.keys(aReportData[0]);
 
-            const aProdKeys = aKeys.filter(k => k.endsWith("Prod") && k !== "totalProd");
-            const aErosionKeys = aKeys.filter(k => k.endsWith("Erosion"));
+            // Case-insensitive filtering
+            const aProdKeys = aKeys.filter(k => k.toLowerCase().endsWith("prod") && k.toLowerCase() !== "totalprod");
+            const aErosionKeys = aKeys.filter(k => k.toLowerCase().endsWith("erosion"));
 
+            console.log("All keys in dataset:", aKeys);
+            console.log("Production keys (aProdKeys):", aProdKeys);
+            console.log("Erosion keys (aErosionKeys):", aErosionKeys);
+
+            if (!aProdKeys.length && !aErosionKeys.length) {
+                console.warn("No production or erosion keys found. Chart cannot be rendered.");
+                return;
+            }
+
+            /* =========================
+               2. LABEL FUNCTION (UPPERCASE, NO UNDERSCORE)
+            ========================= */
             const fnLabel = function (sKey) {
-                return sKey
-                    .replace(/([A-Z])/g, " $1")
-                    .replace(/^./, c => c.toUpperCase());
+                return sKey.replace(/_/g, " ").toUpperCase();
             };
 
             /* =========================
-               2. PRODUCTION DATASET
+               3. PRODUCTION DATASET
             ========================= */
             const oProdDataset = new FlattenedDataset({
                 dimensions: [{
@@ -178,7 +209,7 @@ sap.ui.define([
             });
 
             /* =========================
-               3. EROSION DATASET
+               4. EROSION DATASET
             ========================= */
             const oErosionDataset = new FlattenedDataset({
                 dimensions: [{
@@ -195,94 +226,115 @@ sap.ui.define([
             });
 
             /* =========================
-               4. PRODUCTION CHART
+               5. PRODUCTION CHART
             ========================= */
-            const oProdChart = new VizFrame({
-                vizType: "line",
-                width: "100%",
-                height: "250px",
-                dataset: oProdDataset
-            });
+            let oProdChart = null;
+            if (aProdKeys.length) {
+                oProdChart = new VizFrame({
+                    vizType: "line",
+                    width: "100%",
+                    height: "250px",
+                    dataset: oProdDataset
+                });
 
-            oProdChart.setModel(oModel);
+                oProdChart.setModel(oModel);
 
-            oProdChart.addFeed(new FeedItem({
-                uid: "categoryAxis",
-                type: "Dimension",
-                values: ["Date"]
-            }));
+                oProdChart.addFeed(new FeedItem({
+                    uid: "categoryAxis",
+                    type: "Dimension",
+                    values: ["Date"]
+                }));
 
-            oProdChart.addFeed(new FeedItem({
-                uid: "valueAxis",
-                type: "Measure",
-                values: aProdKeys.map(fnLabel)
-            }));
+                oProdChart.addFeed(new FeedItem({
+                    uid: "valueAxis",
+                    type: "Measure",
+                    values: aProdKeys.map(fnLabel)
+                }));
 
-            oProdChart.setVizProperties({
-                title: {
-                    text: "Production Trend"
-                },
-                plotArea: {
-                    dataLabel: {
+                oProdChart.setVizProperties({
+                    title: {
+                        text: "Production Trend"
+                    },
+                    plotArea: {
+                        dataLabel: {
+                            visible: true
+                        }
+                    },
+                    valueAxis: {
+                        title: {
+                            visible: true,
+                            text: "Production"  // <-- Set Y-axis label here
+                        }
+                    },
+                    legend: {
                         visible: true
                     }
-                },
-                legend: {
-                    visible: true
-                }
-            });
+                });
+            }
 
             /* =========================
-               5. EROSION CHART
-               (SAME STYLE AS PRODUCTION)
+               6. EROSION CHART
             ========================= */
-            const oErosionChart = new VizFrame({
-                vizType: "line",
-                width: "100%",
-                height: "250px",
-                dataset: oErosionDataset
-            });
+            let oErosionChart = null;
+            if (aErosionKeys.length) {
+                oErosionChart = new VizFrame({
+                    vizType: "line",
+                    width: "100%",
+                    height: "250px",
+                    dataset: oErosionDataset
+                });
 
-            oErosionChart.setModel(oModel);
+                oErosionChart.setModel(oModel);
 
-            oErosionChart.addFeed(new FeedItem({
-                uid: "categoryAxis",
-                type: "Dimension",
-                values: ["Date"]
-            }));
+                oErosionChart.addFeed(new FeedItem({
+                    uid: "categoryAxis",
+                    type: "Dimension",
+                    values: ["Date"]
+                }));
 
-            oErosionChart.addFeed(new FeedItem({
-                uid: "valueAxis",
-                type: "Measure",
-                values: aErosionKeys.map(fnLabel)
-            }));
+                oErosionChart.addFeed(new FeedItem({
+                    uid: "valueAxis",
+                    type: "Measure",
+                    values: aErosionKeys.map(fnLabel)
+                }));
 
-            oErosionChart.setVizProperties({
-                title: {
-                    text: "Erosion Trend"
-                },
-                plotArea: {
-                    dataLabel: {
+                oErosionChart.setVizProperties({
+                    title: {
+                        text: "Erosion Trend"
+                    },
+                    plotArea: {
+                        dataLabel: {
+                            visible: true
+                        }
+                    },
+                    valueAxis: {
+                        title: {
+                            visible: true,
+                            text: "Erosion"  // <-- Set Y-axis label here
+                        }
+                    },
+                    legend: {
                         visible: true
                     }
-                },
-                legend: {
-                    visible: true
-                }
-            });
+                });
+            }
 
             /* =========================
-               6. COMBINE CHARTS
+               7. COMBINE CHARTS
             ========================= */
-            const oChartsBox = new sap.m.VBox({
-                items: [
-                    oProdChart,
-                    oErosionChart
-                ]
-            });
+            const items = [];
+            if (oProdChart) items.push(oProdChart);
+            if (oErosionChart) items.push(oErosionChart);
+
+            if (!items.length) {
+                console.warn("No charts to display.");
+                return;
+            }
+
+            const oChartsBox = new sap.m.VBox({ items });
 
             /* =========================
-               7. SHOW IN DIALOG
+               8. SHOW IN DIALOG
             ========================= */
             const oDialog = new Dialog({
                 title: "Production & Erosion Trends",
@@ -306,33 +358,28 @@ sap.ui.define([
 
 
         , onExportExcel: function () {
-
             const aData = this.getView().getModel().getProperty("/reportData");
-
-            if (!aData || !aData.length) {
-                return;
-            }
+            if (!aData || !aData.length) return;
 
             /* =========================
                1. BUILD COLUMNS DYNAMICALLY
             ========================= */
             const aKeys = Object.keys(aData[0]);
 
-            const aColumns = aKeys.map(function (sKey) {
-                return {
-                    label: sKey
-                        .replace(/([A-Z])/g, " $1")
-                        .replace(/^./, c => c.toUpperCase()),
-                    property: sKey,
-                    type: exportLibrary.EdmType.Number
-                };
-            });
+            const aColumns = aKeys.map(sKey => ({
+                label: sKey
+                    .replace(/_/g, " ")                  // underscores → space
+                    .replace(/([a-z])([A-Z])/g, "$1 $2") // split camelCase
+                    .replace(/[^a-zA-Z0-9 ]/g, "")       // remove special chars
+                    .toUpperCase(),                       // uppercase
+                property: sKey,
+                type: exportLibrary.EdmType.Number
+            }));
 
             /* =========================
                2. BUILD TIMESTAMPED FILE NAME
             ========================= */
             const oNow = new Date();
-
             const sTimestamp =
                 oNow.getFullYear() +
                 ("0" + (oNow.getMonth() + 1)).slice(-2) +
@@ -347,9 +394,7 @@ sap.ui.define([
                3. SPREADSHEET SETTINGS
             ========================= */
             const oSettings = {
-                workbook: {
-                    columns: aColumns
-                },
+                workbook: { columns: aColumns },
                 dataSource: aData,
                 fileName: sFileName
             };
@@ -358,9 +403,8 @@ sap.ui.define([
                4. CREATE & DOWNLOAD
             ========================= */
             const oSheet = new Spreadsheet(oSettings);
-            oSheet.build().finally(function () {
-                oSheet.destroy();
-            });
+            oSheet.build().finally(() => oSheet.destroy());
         }
+
     });
 });

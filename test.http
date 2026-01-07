@@ -177,3 +177,26 @@ Content-Type: application/json
   "customer_name": "Jindal"
 }
 
+###
+POST http://localhost:4004/odata/v4/site-management/inventory
+Content-Type: application/json
+Accept: application/json
+
+{
+  "siteId": "SITE01",
+  "material": "MAT001",
+  "materialDescription": "Refractory brick",
+  "quantity": 45,
+  "batch": "BATCH-01"
+}
+
+###
+GET http://localhost:4004/odata/v4/site-management/inventory?$filter=siteId eq 'SITE01'
+Accept: application/json
+
+###
+GET http://localhost:4004/odata/v4/site-management/getDailyProductionPivot?site_id=SITE-JINDAL-PUNE-NIGAM&fromDate=2026-01-06&toDate=2026-01-07
+Accept: application/json
+
+
+
