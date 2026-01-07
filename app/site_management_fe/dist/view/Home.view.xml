@@ -1,0 +1,74 @@
+<mvc:View
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    controllerName="com.trl.sitemanagementfe.controller.Home"
+    displayBlock="true"
+>
+    <Page showHeader="true">
+     <!-- ========== HEADER ========== -->
+        <customHeader>
+            <Bar class="headerBarFix">
+                <contentLeft>
+                    <Image src="/images/logo.png" height="40px" class="siteLogo"/>
+                </contentLeft>
+                <contentMiddle>
+                    <HBox width="90%" justifyContent="Center">
+                        <Text text="DASHBOARD" class="siteHeaderTitle"/>
+                    </HBox>
+                </contentMiddle>
+            </Bar>
+        </customHeader>
+        <!-- Tiles Row -->
+        <HBox
+            justifyContent="Start"
+            class="sapUiSmallMargin"
+        >
+            <!-- TILE 1: Configuration -->
+            <GenericTile
+                header="Site Configuration"
+                press=".onConfigurationPress"
+                class="sapUiTinyMargin card-tile"
+            >
+                <TileContent>
+                    <core:Icon
+                        src="sap-icon://key-user-settings"
+                        color="#3fb9ec"
+                        class="iconTile"
+                    />
+                </TileContent>
+            </GenericTile>
+
+            <!-- TILE 2: Production -->
+            <GenericTile
+                header="Production"
+                press=".onProductionPress"
+                class="sapUiTinyMargin card-tile"
+            >
+                <TileContent>
+                    <core:Icon
+                        src="sap-icon://factory"
+                        color="#3fb9ec"
+                        class="iconTile"
+                    />
+                </TileContent>
+            </GenericTile>
+
+            <!-- TILE 3: Temperature -->
+            <GenericTile
+                header="Temperature"
+                press=".onTemperaturePress"
+                class="sapUiTinyMargin card-tile"
+            >
+                <TileContent>
+                    <core:Icon
+                        src="sap-icon://temperature"
+                        color="#3fb9ec"
+                        class="iconTile"
+                    />
+                </TileContent>
+            </GenericTile>
+        </HBox>
+
+    </Page>
+</mvc:View>

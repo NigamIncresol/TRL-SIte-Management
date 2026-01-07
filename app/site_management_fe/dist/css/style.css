@@ -1,0 +1,77 @@
+/* Header bar fix */
+.headerBarFix {
+    position: relative;
+}
+
+/* Absolutely center text */
+.headerCenterBox {
+    position: absolute;
+    left: 40%;
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+/* Title styling */
+.siteHeaderTitle {
+    font-size: 1.4rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #070707;
+    white-space: nowrap;
+    text-align: center;
+    width: 100%;
+}
+.siteLogo {
+    height: 40px;
+    object-fit: contain;
+    margin-left: 10px;
+    border-radius: 20px !important;   /* REMOVE ROUNDING */
+    box-shadow: none !important;   /* REMOVE SHADOW */
+}
+.exampleDiv {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+/* Page Background Color */
+.sitePageBackground {
+    background-color: #eefcff !important;
+}
+
+/* For full content area */
+.sitePageBackground .sapMPageSubHeader,
+.sitePageBackground .sapMPageScroll {
+    background-color: #c8d8dc !important;
+}
+/* Panel Card Shadow Effect */
+.whiteCard {
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
+    margin: 12px 6px !important;
+    overflow: hidden !important;
+    border: none !important;
+}
+
+/* Panel Header Styling */
+.whiteCard .sapMPanelHdr {
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+/* Remove default panel border */
+.whiteCard .sapMPanelContent {
+    border-top: none !important;
+}
+
+/* Elevation on hover (optional) */
+.whiteCard:hover {
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+    transition: 0.25s ease-in-out;
+}
+
+.generalInfoBg{
+  
+    border-radius: 10px;
+   
+}

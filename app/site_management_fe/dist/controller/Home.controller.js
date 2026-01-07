@@ -1,0 +1,2 @@
+sap.ui.define(["sap/ui/core/mvc/Controller","sap/m/MessageToast"],function(e,n){"use strict";return e.extend("com.trl.sitemanagementfe.controller.Home",{onInit:function(){},onConfigurationPress:function(){this.getOwnerComponent().getRouter().navTo("RouteView1")},onProductionPress:function(){this.getOwnerComponent().getRouter().navTo("RouteView2")},onTemperaturePress:function(){this.getOwnerComponent().getRouter().navTo("RouteView3")}})});
+//# sourceMappingURL=Home.controller.js.map

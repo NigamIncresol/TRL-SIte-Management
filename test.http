@@ -161,3 +161,21 @@ Accept: application/json
 
 
 
+### Create Location
+POST http://localhost:4004/odata/v4/site-management/locationMaster
+Content-Type: application/json
+
+{
+  "location_name": "Bengaluru"
+}
+
+### Create Customer
+POST http://localhost:4004/odata/v4/site-management/customerMaster
+Content-Type: application/json
+
+{
+  "customer_name": "TATA"
+}
+### 1️⃣ Fetch DailyProduction filtered by site_id and date range
+GET http://localhost:4004/odata/v4/site-management/dailyProduction?$filter=site_id eq 'SITE-TATA-BENGALURU-RUN' and production_date ge 2025-12-20 and production_date le 2026-01-07&$orderby=production_date asc
+Accept: application/json

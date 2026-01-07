@@ -1,6 +1,10 @@
 using {trlmonitoring} from '../db/schema';
 
 service siteManagementService {
+    entity customerMaster     as projection on trlmonitoring.CustomerMaster;
+
+    entity locationMaster     as projection on trlmonitoring.LocationMaster;
+    
     entity siteMaster         as projection on trlmonitoring.SiteMaster;
 
     entity siteProductionLine as projection on trlmonitoring.SiteProductionLine;
@@ -36,6 +40,5 @@ service siteManagementService {
                                     runner_id: String,
                                     line_name: String) returns String;
 
-    
 
 }

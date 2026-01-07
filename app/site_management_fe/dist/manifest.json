@@ -1,0 +1,161 @@
+{
+	"_version": "1.76.0",
+	"sap.app": {
+		"id": "com.trl.sitemanagementfe",
+		"type": "application",
+		"i18n": {
+			"bundleUrl": "i18n/i18n.properties",
+			"supportedLocales": [
+				""
+			]
+		},
+		"applicationVersion": {
+			"version": "0.0.1"
+		},
+		"title": "{{appTitle}}",
+		"description": "{{appDescription}}",
+		"resources": "resources.json",
+		"sourceTemplate": {
+			"id": "@sap/generator-fiori:basic",
+			"version": "1.20.0",
+			"toolsId": "7122c3cd-9c00-4da8-ab2e-45e59147a8ec"
+		},
+		"dataSources": {
+			"mainService": {
+				"uri": "/odata/v4/site-management/",
+				"type": "OData",
+				"settings": {
+					"annotations": [],
+					"odataVersion": "4.0"
+				}
+			}
+		}
+	},
+	"sap.ui": {
+		"technology": "UI5",
+		"icons": {
+			"icon": "",
+			"favIcon": "",
+			"phone": "",
+			"phone@2": "",
+			"tablet": "",
+			"tablet@2": ""
+		},
+		"deviceTypes": {
+			"desktop": true,
+			"tablet": true,
+			"phone": true
+		}
+	},
+	"sap.ui5": {
+		"flexEnabled": true,
+		"dependencies": {
+			"minUI5Version": "1.143.2",
+			"libs": {
+				"sap.m": {},
+				"sap.ui.core": {},
+				"sap.f": {}
+			}
+		},
+		"contentDensities": {
+			"compact": true,
+			"cozy": true
+		},
+		"models": {
+			"": {
+				"dataSource": "mainService",
+				"settings": {
+					"operationMode": "Server",
+					"autoExpandSelect": true,
+					"earlyRequests": true
+				}
+			},
+			"i18n": {
+				"type": "sap.ui.model.resource.ResourceModel",
+				"settings": {
+					"bundleName": "com.trl.sitemanagementfe.i18n.i18n",
+					"supportedLocales": [
+						""
+					]
+				}
+			}
+		},
+		"resources": {
+			"css": [
+				{
+					"uri": "css/style.css"
+				}
+			]
+		},
+		"routing": {
+			"config": {
+				"routerClass": "sap.m.routing.Router",
+				"controlAggregation": "pages",
+				"controlId": "app",
+				"transition": "slide",
+				"type": "View",
+				"viewType": "XML",
+				"path": "com.trl.sitemanagementfe.view",
+				"async": true,
+				"viewPath": "com.trl.sitemanagementfe.view"
+			},
+			"routes": [
+				{
+					"pattern": "",
+					"name": "Home",
+					"target": "Home"
+				},
+				{
+					"name": "RouteView1",
+					"pattern": "View1",
+					"target": [
+						"TargetView1"
+					]
+				},
+				{
+					"name": "RouteView2",
+					"pattern": "View2",
+					"target": [
+						"TargetView2"
+					]
+				},
+				{
+					"name": "RouteView3",
+					"pattern": "View3",
+					"target": [
+						"TargetView3"
+					]
+				}
+			],
+			"targets": {
+				"Home": {
+					"id": "Home",
+					"viewName": "Home"
+				},
+				"TargetView1": {
+					"id": "View1",
+					"name": "View1"
+				},
+				"TargetView2": {
+					"id": "View2",
+					"name": "View2"
+				},
+				"TargetView3": {
+					"id": "View3",
+					"name": "View3"
+				}
+			}
+		},
+		"rootView": {
+			"viewName": "com.trl.sitemanagementfe.view.App",
+			"type": "XML",
+			"id": "App",
+			"async": true
+		},
+		"flexBundle": false
+	},
+	"sap.cloud": {
+		"public": true,
+		"service": "TSS_Site_Management"
+	}
+}

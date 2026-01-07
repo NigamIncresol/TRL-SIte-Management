@@ -104,14 +104,14 @@
             "TargetView1"
           ]
         },
-         {
+        {
           "name": "RouteView2",
           "pattern": "View2",
           "target": [
             "TargetView2"
           ]
         },
-              {
+        {
           "name": "RouteView3",
           "pattern": "View3",
           "target": [
@@ -128,11 +128,11 @@
           "id": "View1",
           "name": "View1"
         },
-         "TargetView2": {
+        "TargetView2": {
           "id": "View2",
           "name": "View2"
         },
-         "TargetView3": {
+        "TargetView3": {
           "id": "View3",
           "name": "View3"
         }
@@ -144,5 +144,9 @@
       "id": "App",
       "async": true
     }
+  },
+  "sap.cloud": {
+    "public": true,
+    "service": "TSS_Site_Management"
   }
 }

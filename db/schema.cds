@@ -5,18 +5,26 @@ using {
 
 namespace trlmonitoring;
 
+entity CustomerMaster : cuid, managed {
+  customer_name : String(100);
+}
+
+entity LocationMaster : cuid, managed {
+  location_name : String(100);
+}
+
 entity SiteMaster : managed {
   key site_id         : String(100);
       customer_name   : String(100);
       location        : String(100);
-      runner_id       : String(20);
+      runner_id       : String(20);  //In frontend refered as Furnace Id.
 
       productionLines : Composition of many SiteProductionLine
                           on productionLines.site = $self;
 }
 
 entity SiteProductionLine : cuid, managed {
-  line_name                : String(100);
+  line_name                : String(100); //in frontend mentioned as Runner id
   no_of_spg_sensors        : Integer;
   no_of_mudgun_sensors     : Integer;
 
@@ -61,7 +69,7 @@ entity DailyProduction : managed {
   key productionLineName       : String(100);
   key production_date          : Date;
 
-      productionLine           : Association to SiteProductionLine;
+      productionLine           : Association to SiteProductionLine; 
       curr_campaign            : String(50);
       curr_repair_status       : String(20);
       curr_minor_repair_status : Integer;
