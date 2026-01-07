@@ -1,0 +1,448 @@
+<mvc:View
+    controllerName="com.trl.sitemanagementfe.controller.View5"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:layout="sap.ui.layout"
+    xmlns:core="sap.ui.core"
+>
+    <Page
+        showHeader="true"
+        class="sapUiContentPadding sitePageBackground"
+    >
+        <!-- ========== HEADER ========== -->
+        <customHeader>
+            <Bar class="headerBarFix">
+                <contentLeft>
+                    <Image
+                        src="/images/logo.png"
+                        height="40px"
+                        class="siteLogo"
+                    />
+                </contentLeft>
+                <contentMiddle>
+                    <HBox
+                        width="90%"
+                        justifyContent="Center"
+                    >
+                        <Text
+                            text="Consumption"
+                            class="siteHeaderTitle"
+                        />
+                    </HBox>
+                </contentMiddle>
+            </Bar>
+        </customHeader>
+        <Button
+            text=""
+            type="Back"
+            press=".onNavToHome"
+        />
+
+        <!-- DATE / TIME / SHIFT ROW -->
+        <!-- <HBox
+            width="100%"
+            justifyContent="SpaceBetween"
+            class="sapUiSmallMarginBottom"
+            wrap="Wrap"
+        >
+            <VBox
+                width="300px"
+                justifyContent="Start"
+            >
+                <Label text="Site ID" />
+                <Input
+                    id="siteId"
+                    change=".onSiteIdChange"
+                    placeholder="Enter Site ID"
+                />
+            </VBox>
+            <ToolbarSpacer />
+            <VBox justifyContent="End">
+                <Label text="SHIFT" />
+                <Select
+                    selectedKey="{formData>/shift}"
+                    forceSelection="true"
+                    editable="true"
+                      id="shiftSelect"
+                >
+                    <items>
+                        <core:Item
+                            key="A"
+                            text="A"
+                        />
+                        <core:Item
+                            key="B"
+                            text="B"
+                        />
+                        <core:Item
+                            key="C"
+                            text="C"
+                        />
+                    </items>
+                </Select>
+            </VBox>
+        </HBox> -->
+
+        <Panel
+            headerText="Search"
+            class="whiteCard"
+            expandable="false"
+        >
+            <content>
+                <HBox
+                    width="100%"
+                    justifyContent="SpaceBetween"
+                    alignItems="End"
+                    wrap="Wrap"
+                >
+                    <!-- Site ID -->
+                    <VBox width="25%">
+                        <Label
+                            text="Site ID"
+                            required="true"
+                        />
+                        <Input
+                            id="siteId"
+                            placeholder="Enter Site ID"
+                            showValueHelp="true"
+                            liveChange="onSiteIdLiveChange"
+                            valueHelpRequest="onSiteIdValueHelp"
+                        />
+                    </VBox>
+
+                    <!-- Production Line ID -->
+                    <VBox width="25%">
+                        <Label
+                            text="Production Line"
+                            required="true"
+                        />
+                        <Input
+                            id="ProductionLineId1"
+                            placeholder="Enter Production Line"
+                            showValueHelp="true"
+                            liveChange="onProdLineLiveChange"
+                            valueHelpRequest="onProdLineValueHelp"
+                        />
+                    </VBox>
+
+                    <!-- Date -->
+                    <VBox width="25%">
+                        <Label
+                            text="Date"
+                            required="true"
+                        />
+                        <DatePicker
+                            id="siteDate1"
+                            width="100%"
+                            valueFormat="yyyy-MM-dd"
+                            displayFormat="dd-MM-yyyy"
+                        />
+                    </VBox>
+
+                    <VBox justifyContent="End">
+                        <Label
+                            text="Shift"
+                            required="true"
+                        />
+                        <Select
+                            selectedKey="{formData>/shift}"
+                            forceSelection="true"
+                            editable="true"
+                            id="shiftSelect"
+                        >
+                            <items>
+                                <core:Item
+                                    key="A"
+                                    text="A"
+                                />
+                                <core:Item
+                                    key="B"
+                                    text="B"
+                                />
+                                <core:Item
+                                    key="C"
+                                    text="C"
+                                />
+                            </items>
+                        </Select>
+                    </VBox>
+
+                    <!-- Find Button -->
+                    <VBox width="8%">
+                        <Label text=" " />
+                        <Button
+                            text="Find"
+                            type="Emphasized"
+                            width="100%"
+                            press="onFindPress"
+                        />
+                    </VBox>
+                </HBox>
+            </content>
+        </Panel>
+
+        <!-- GENERAL INFORMATION PANEL (READ-ONLY) -->
+        <!-- <Panel
+            headerText="General Information"
+            class="whiteCard"
+        >
+            <layout:Grid
+                defaultSpan="L4 M6 S12"
+                hSpacing="1"
+                vSpacing="1"
+            >
+                <VBox>
+                    <Label text="Customer" />
+                    <Input
+                        value="{formData>/siteMaster/customer_name}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Location" />
+                    <Input
+                        value="{formData>/siteMaster/location}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Furnance ID" />
+                    <Input
+                    
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Runner ID" />
+                    <Input
+                        value="{formData>/siteMaster/runner_id}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Campaign No" />
+                    <Input
+                        value="{formData>/campinfo/campaign_no}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Repair Status" />
+                    <Input
+                        value="{formData>/campinfo/repair_status}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Minor Repair Status" />
+                    <Input
+                        value="{formData>/campinfo/minor_repair_status}"
+                        type="Number"
+                        editable="false"
+                    />
+                </VBox>
+            </layout:Grid>
+        </Panel> -->
+        <Panel
+            headerText="General Information"
+            class="whiteCard"
+        >
+            <!-- ================= ROW 1 ================= -->
+            <layout:Grid
+                defaultSpan="L6 M6 S12"
+                hSpacing="1"
+            >
+                <VBox>
+                    <Label text="Customer" />
+                    <Input
+                        value="{formData>/siteMaster/customer_name}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Location" />
+                    <Input
+                        value="{formData>/siteMaster/location}"
+                        editable="false"
+                    />
+                </VBox>
+            </layout:Grid>
+
+            <!-- ================= ROW 2 ================= -->
+            <layout:Grid
+                defaultSpan="L6 M6 S12"
+                hSpacing="1"
+            >
+                <VBox>
+                    <Label text="Furnace ID" />
+                    <Input
+                        value="{formData>/siteMaster/furnance_id}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Runner ID" />
+                    <Input
+                        value="{formData>/siteMaster/runner_id}"
+                        editable="false"
+                    />
+                </VBox>
+            </layout:Grid>
+
+            <!-- ================= ROW 3 ================= -->
+            <layout:Grid
+                defaultSpan="L4 M4 S12"
+                hSpacing="1"
+            >
+                <VBox>
+                    <Label text="Campaign No" />
+                    <Input
+                        value="{formData>/campinfo/campaign_no}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Repair Status" />
+                    <Input
+                        value="{formData>/campinfo/repair_status}"
+                        editable="false"
+                    />
+                </VBox>
+
+                <VBox>
+                    <Label text="Minor Repair Status" />
+                    <Input
+                        value="{formData>/campinfo/minor_repair_status}"
+                        editable="false"
+                    />
+                </VBox>
+            </layout:Grid>
+        </Panel>
+
+        <Panel
+            headerText="Materials Details"
+            class="whiteCard"
+            expandable="false"
+        >
+            <Table
+                id="materialTable"
+                items="{formData>/materials}"
+                inset="false"
+            >
+                <!-- ===== Header Toolbar ===== -->
+                <headerToolbar>
+                    <Toolbar>
+                        <Title text="" />
+                        <ToolbarSpacer />
+                        <Button
+                            text="Add Row"
+                            icon="sap-icon://add"
+                            press=".onAddMaterialRow"
+                        />
+                    </Toolbar>
+                </headerToolbar>
+
+                <!-- ===== Columns ===== -->
+                <columns>
+                    <Column>
+                        <Text text="Material" />
+                    </Column>
+
+                    <Column>
+                        <Text text="Quantity" />
+                    </Column>
+                    <Column>
+                        <Text text="Batch" />
+                    </Column>
+
+                    <Column>
+                        <Text text="Remark" />
+                    </Column>
+
+                    <Column
+                        hAlign="Center"
+                        width="4rem"
+                    >
+                        <Text text="Delete" />
+                    </Column>
+                </columns>
+
+                <!-- ===== Rows ===== -->
+                <items>
+                    <ColumnListItem>
+                        <cells>
+                            <Input
+                                value="{formData>material}"
+                                placeholder="Enter Material"
+                            />
+
+                            <Input
+                                value="{formData>materialDesc}"
+                                placeholder="Enter Quantity"
+                            />
+
+                            <Input
+                                value="{formData>batch}"
+                                placeholder="Enter Batch"
+                            />
+
+                            <Input
+                                value="{formData>remarks}"
+                                placeholder="Remark"
+                            />
+
+                            <Button
+                                icon="sap-icon://delete"
+                                type="Transparent"
+                                press=".onDeleteMaterialRow"
+                            />
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </Panel>
+
+        <!-- DYNAMIC PRODUCTION LINES -->
+        <VBox
+            id="linesContainer"
+            class="sapUiMediumMargin"
+        />
+
+        <!-- ========== ACTION BUTTONS ========== -->
+        <HBox
+            class="actionBar"
+            style="margin-top:1rem;"
+            justifyContent="SpaceBetween"
+        >
+            <!-- Left side -->
+            <Button
+                text="Submit"
+                type="Success"
+                press=".onSubmit"
+                class="sapUiTinyMarginBegin"
+                visible="{formData>/isSensorEditable}"
+            />
+
+            <!-- Spacer pushes next content to right -->
+            <ToolbarSpacer />
+
+            <!-- Right side -->
+            <Button
+                text="Save as Draft"
+                type="Emphasized"
+                press=".onSave"
+                class="sapUiTinyMarginBegin"
+                visible="{formData>/isSensorEditable}"
+            />
+        </HBox>
+    </Page>
+</mvc:View>

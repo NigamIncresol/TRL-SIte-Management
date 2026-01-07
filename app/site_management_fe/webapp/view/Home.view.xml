@@ -68,6 +68,48 @@
                     />
                 </TileContent>
             </GenericTile>
+            
+            <!-- TILE 4: Inventory -->
+            <GenericTile
+                header="Inventory IN"
+                press=".oninventoryPress"
+                class="sapUiTinyMargin card-tile"
+            >
+                <TileContent>
+                    <core:Icon
+                        src="sap-icon://filter-analytics"
+                        color="#3fb9ec"
+                        class="iconTile"
+                    />
+                </TileContent>
+            </GenericTile>
+               <!-- TILE 5: Consumption -->
+             <GenericTile
+                header="consumption"
+                press=".onconsumptionPress"
+                class="sapUiTinyMargin card-tile"
+            >
+                <TileContent>
+                    <core:Icon
+                        src="sap-icon://line-charts"
+                        color="#3fb9ec"
+                        class="iconTile"
+                    />
+                </TileContent>
+            </GenericTile>
+             <GenericTile
+                header="Report"
+                press=".onReportPress"
+                class="sapUiTinyMargin card-tile"
+            >
+                <TileContent>
+                    <core:Icon
+                        src="sap-icon://business-objects-experience"
+                        color="#3fb9ec"
+                        class="iconTile"
+                    />
+                </TileContent>
+            </GenericTile>
         </HBox>
 
     </Page>

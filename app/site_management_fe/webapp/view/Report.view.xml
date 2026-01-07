@@ -1,0 +1,124 @@
+<mvc:View
+    controllerName="com.trl.sitemanagementfe.controller.Report"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:layout="sap.ui.layout"
+    xmlns:core="sap.ui.core"
+>
+    <Page
+        showHeader="true"
+        class="sapUiContentPadding sitePageBackground"
+    >
+        <Button
+            text=""
+            type="Back"
+            press=".onNavToHome"
+        />
+
+        <!-- HEADER -->
+
+        <!-- REPORT FILTER / INFO -->
+
+        <!-- HOUSE / PRODUCTION LINE 1 REPORT -->
+        <Panel
+            headerText="Daily Wise "
+            class="whiteCard"
+            expandable="true"
+        >
+            <content>
+                <HBox
+                    width="100%"
+                    justifyContent="SpaceBetween"
+                    alignItems="End"
+                    wrap="Wrap"
+                >
+                    <!-- Site ID -->
+                    <VBox width="25%">
+                        <Label
+                            text="Site ID"
+                            required="true"
+                        />
+                        <Input
+                            id="siteId"
+                            placeholder="Enter Site ID"
+                            showValueHelp="true"
+                            liveChange="onSiteIdLiveChange"
+                            valueHelpRequest="onSiteIdValueHelp"
+                        />
+                    </VBox>
+
+                    <!-- From Date -->
+                    <VBox width="25%">
+                        <Label
+                            text="From Date"
+                            required="true"
+                        />
+                        <DatePicker
+                            id="fromDate"
+                            width="100%"
+                            valueFormat="yyyy-MM-dd"
+                            displayFormat="dd-MM-yyyy"
+                        />
+                    </VBox>
+
+                    <!-- To Date -->
+                    <VBox width="25%">
+                        <Label
+                            text="To Date"
+                            required="true"
+                        />
+                        <DatePicker
+                            id="toDate"
+                            width="100%"
+                            valueFormat="yyyy-MM-dd"
+                            displayFormat="dd-MM-yyyy"
+                        />
+                    </VBox>
+
+                    <!-- Shift -->
+                    <!-- <VBox>
+                <Label
+                    text="Shift"
+                    required="true"
+                />
+                <Select
+                    id="shiftSelect"
+                    selectedKey="{formData>/shift}"
+                    forceSelection="true"
+                    editable="true"
+                >
+                    <items>
+                        <core:Item key="A" text="A" />
+                        <core:Item key="B" text="B" />
+                        <core:Item key="C" text="C" />
+                    </items>
+                </Select>
+            </VBox> -->
+
+                    <!-- Find Button -->
+                    <VBox width="8%">
+                        <Label text=" " />
+                        <Button
+                            text="Find"
+                            type="Emphasized"
+                            width="100%"
+                            press="onFindPress"
+                        />
+                    </VBox>
+
+                    <VBox
+                        id="tableContainer"
+                        width="100%"
+                        class="sapUiSmallMarginTop"
+                    />
+                </HBox>
+            </content>
+        </Panel>
+
+        <!-- PLACEHOLDER FOR MORE LINES -->
+        <VBox
+            id="reportLinesContainer"
+            width="100%"
+        />
+    </Page>
+</mvc:View>

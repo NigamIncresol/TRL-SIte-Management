@@ -26,6 +26,18 @@ sap.ui.define([
         onTemperaturePress: function () {
              this.getOwnerComponent().getRouter().navTo("RouteView3");
             // MessageToast.show("Temperature tile clicked");
+        },
+         oninventoryPress: function () {
+             this.getOwnerComponent().getRouter().navTo("RouteView4");
+            // MessageToast.show("Temperature tile clicked");
+        },
+         onconsumptionPress: function () {
+             this.getOwnerComponent().getRouter().navTo("RouteView5");
+            // MessageToast.show("Temperature tile clicked");
+        },
+         onReportPress: function () {
+             this.getOwnerComponent().getRouter().navTo("RouteView6");
+            // MessageToast.show("Temperature tile clicked");
         }
 
     });

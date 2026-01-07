@@ -104,18 +104,39 @@
             "TargetView1"
           ]
         },
-         {
+        {
           "name": "RouteView2",
           "pattern": "View2",
           "target": [
             "TargetView2"
           ]
         },
-              {
+        {
           "name": "RouteView3",
           "pattern": "View3",
           "target": [
             "TargetView3"
+          ]
+        },
+        {
+          "name": "RouteView4",
+          "pattern": "View4",
+          "target": [
+            "TargetView4"
+          ]
+        },
+        {
+          "name": "RouteView5",
+          "pattern": "View5",
+          "target": [
+            "TargetView5"
+          ]
+        },
+        {
+          "name": "RouteView6",
+          "pattern": "Report",
+          "target": [
+            "TargetView6"
           ]
         }
       ],
@@ -128,14 +149,27 @@
           "id": "View1",
           "name": "View1"
         },
-         "TargetView2": {
+        "TargetView2": {
           "id": "View2",
           "name": "View2"
         },
-         "TargetView3": {
+        "TargetView3": {
           "id": "View3",
           "name": "View3"
+        },
+        "TargetView4": {
+          "id": "View4",
+          "name": "View4"
+        },
+        "TargetView5": {
+          "id": "View5",
+          "name": "View5"
+        },
+        "TargetView6": {
+          "id": "Report",
+          "name": "Report"
         }
+        
       }
     },
     "rootView": {
