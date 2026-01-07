@@ -114,12 +114,12 @@
                     <!-- Production Line ID -->
                     <VBox width="25%">
                         <Label
-                            text="Production Line"
+                            text="Runner"
                             required="true"
                         />
                         <Input
                             id="ProductionLineId1"
-                            placeholder="Enter Production Line"
+                            placeholder="Enter Runner"
                             showValueHelp="true"
                             liveChange="onProdLineLiveChange"
                             valueHelpRequest="onProdLineValueHelp"
@@ -209,7 +209,7 @@
                 </VBox>
 
                 <VBox>
-                    <Label text="Runner ID" />
+                    <Label text="Furnace ID" />
                     <Input
                         value="{formData>/siteMaster/runner_id}"
                         editable="false"

@@ -46,7 +46,7 @@ sap.ui.define([
             // $.ajax({
             //     url: "/odata/v4/site-management/siteProductionLine",
             //     method: "GET",
-            //     success: res => console.log("response of site production line", res),
+            //     success: res => console.log("response of site production line/ runner", res),
             //     error: err => console.log("error site prod line", err)
             // });
         },
@@ -196,7 +196,7 @@ sap.ui.define([
         ,
         _loadDropdowns: function () {
 
-          const oODataModel = this.getOwnerComponent().getModel();
+            const oODataModel = this.getOwnerComponent().getModel();
 
             // ===== CUSTOMER GET CALL =====
             const oCustomerBinding = oODataModel.bindList("/customerMaster");
@@ -672,7 +672,7 @@ sap.ui.define([
             aLinesFromAPI.forEach((line, index) => {
 
                 const panel = new sap.m.Panel({
-                    headerText: "House / Production Line - " + (index + 1),
+                    headerText: "Runner - " + (index + 1),
                     expandable: true,
                     expanded: true
                 }).addStyleClass("whiteCard sapUiMediumMarginBottom");
@@ -761,9 +761,9 @@ sap.ui.define([
                 const lineGrid = new sap.ui.layout.Grid({
                     defaultSpan: "L4 M6 S12",
                     content: [
-                        new sap.m.VBox({ items: [new sap.m.Label({ text: "Line Name", design: "Bold" }), lineNameInput] }),
-                        new sap.m.VBox({ items: [new sap.m.Label({ text: "No of SPG Sensors", design: "Bold" }), spgCount, spgBox] }),
-                        new sap.m.VBox({ items: [new sap.m.Label({ text: "No of Mudgun Sensors", design: "Bold" }), mudgunCount, mudgunBox] })
+                        new sap.m.VBox({ items: [new sap.m.Label({ text: "Runner Name", design: "Bold" }), lineNameInput] }),
+                        new sap.m.VBox({ items: [new sap.m.Label({ text: "No of OFF Side Sensors", design: "Bold" }), spgCount, spgBox] }),
+                        new sap.m.VBox({ items: [new sap.m.Label({ text: "No of Mudgun Side Sensors", design: "Bold" }), mudgunCount, mudgunBox] })
                     ]
                 });
 
@@ -1060,7 +1060,11 @@ sap.ui.define([
 
                 oSiteContext.created().then(() => {
 
-                    sap.m.MessageToast.show("Site created successfully");
+                     console.log("Created site object:", oSiteContext.getObject());
+                     let createdSiteId= oSiteContext.getObject().site_id;
+                    sap.m.MessageToast.show("Site created successfully : "+createdSiteId , { 
+                        duration:5000
+                    });
 
                     // POST campaigns one by one (same as your AJAX loop)
                     const oCampaignListBinding = oODataModel.bindList("/campaign");
@@ -1107,7 +1111,7 @@ sap.ui.define([
                         return; // Skip PATCH & POST
                     }
 
-                    // Patch production line
+                    // Patch production line/ runner
                     const linePayload = {
                         curr_campaign: currCampaign.campaign_no || null,
                         curr_repair_status: currCampaign.repair_status || null,
@@ -1139,7 +1143,7 @@ sap.ui.define([
                     }).then(() => {
 
                         sap.m.MessageToast.show("Site Updated successfully");
-                        console.log("Production line updated:", line.line_name);
+                        console.log("production line/ Runner updated:", line.line_name);
 
                         /* ========= POST Campaign (conditional) ========= */
                         if (currCampaign?.campaign_no) {
@@ -1168,7 +1172,7 @@ sap.ui.define([
                         }
 
                     }).catch(err => {
-                        console.error("Error updating production line:", line.line_name, err);
+                        console.error("Error updating production line/ runner:", line.line_name, err);
                     });
 
 
@@ -1226,7 +1230,7 @@ sap.ui.define([
             this.byId("runnerId").setValue("");
             this.byId("lineCount").setValue("");
 
-            // 3️⃣ Clear dynamic production lines
+            // 3️⃣ Clear dynamic production line/ runner
             this.byId("linesContainer").removeAllItems();
 
             // 4️⃣ Reset editable state as needed

@@ -166,7 +166,7 @@ sap.ui.define([
             // Create dialog only once
             if (!this._oProdVHDialog) {
                 this._oProdVHDialog = new sap.m.SelectDialog({
-                    title: "Select Production Line",
+                    title: "Select Runner",
 
                     liveChange: (oEvent) => {
                         this._onProdLineSearch(oEvent);
@@ -229,7 +229,7 @@ sap.ui.define([
 
             }).catch(err => {
 
-                sap.m.MessageToast.show("Failed to load production lines.");
+                sap.m.MessageToast.show("Failed to load Runners.");
                 console.error(err);
 
             });
@@ -398,7 +398,7 @@ sap.ui.define([
                 const lineData = { line_name: line.line_name, sensors: [] };
 
                 const oLinePanel = new sap.m.Panel({
-                    headerText: "Production Line : " + line.line_name,
+                    headerText: "Runner : " + line.line_name,
                     expandable: true,
                     expanded: true
                 });

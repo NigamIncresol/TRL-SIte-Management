@@ -38,51 +38,6 @@
             press=".onNavToHome"
         />
 
-        <!-- DATE / TIME / SHIFT ROW -->
-        <!-- <HBox
-            width="100%"
-            justifyContent="SpaceBetween"
-            class="sapUiSmallMarginBottom"
-            wrap="Wrap"
-        >
-            <VBox
-                width="300px"
-                justifyContent="Start"
-            >
-                <Label text="Site ID" />
-                <Input
-                    id="siteId"
-                    change=".onSiteIdChange"
-                    placeholder="Enter Site ID"
-                />
-            </VBox>
-            <ToolbarSpacer />
-            <VBox justifyContent="End">
-                <Label text="SHIFT" />
-                <Select
-                    selectedKey="{formData>/shift}"
-                    forceSelection="true"
-                    editable="true"
-                      id="shiftSelect"
-                >
-                    <items>
-                        <core:Item
-                            key="A"
-                            text="A"
-                        />
-                        <core:Item
-                            key="B"
-                            text="B"
-                        />
-                        <core:Item
-                            key="C"
-                            text="C"
-                        />
-                    </items>
-                </Select>
-            </VBox>
-        </HBox> -->
-
         <Panel
             headerText="Search"
             class="whiteCard"
@@ -122,143 +77,19 @@
                         />
                     </VBox>
 
-                    <!-- Production Line ID -->
-                    <!-- <VBox width="25%">
-                        <Label
-                            text="Production Line"
-                            required="true"
-                        />
-                        <Input
-                            id="ProductionLineId1"
-                            placeholder="Enter Production Line"
-                            showValueHelp="true"
-                            liveChange="onProdLineLiveChange"
-                            valueHelpRequest="onProdLineValueHelp"
-                        />
-                    </VBox> -->
-
-                    <!-- Date -->
-                    <!-- <VBox width="25%">
-                        <Label
-                            text="Date"
-                            required="true"
-                        />
-                        <DatePicker
-                            id="siteDate1"
-                            width="100%"
-                            valueFormat="yyyy-MM-dd"
-                            displayFormat="dd-MM-yyyy"
-                        />
-                    </VBox> -->
-
-                    <!-- <VBox justifyContent="End">
-                        <Label
-                            text="Shift"
-                            required="true"
-                        />
-                        <Select
-                            selectedKey="{formData>/shift}"
-                            forceSelection="true"
-                            editable="true"
-                            id="shiftSelect"
-                        >
-                            <items>
-                                <core:Item
-                                    key="A"
-                                    text="A"
-                                />
-                                <core:Item
-                                    key="B"
-                                    text="B"
-                                />
-                                <core:Item
-                                    key="C"
-                                    text="C"
-                                />
-                            </items>
-                        </Select>
-                    </VBox> -->
-
                     <!-- Find Button -->
                 </HBox>
             </content>
         </Panel>
 
         <!-- GENERAL INFORMATION PANEL (READ-ONLY) -->
-        <!-- <Panel
-            headerText="General Information"
-            class="whiteCard"
-        >
-            <layout:Grid
-                defaultSpan="L4 M6 S12"
-                hSpacing="1"
-                vSpacing="1"
-            >
-                <VBox>
-                    <Label text="Customer" />
-                    <Input
-                        value="{formData>/siteMaster/customer_name}"
-                        editable="false"
-                    />
-                </VBox>
-
-                <VBox>
-                    <Label text="Location" />
-                    <Input
-                        value="{formData>/siteMaster/location}"
-                        editable="false"
-                    />
-                </VBox>
-
-                <VBox>
-                    <Label text="Furnance ID" />
-                    <Input
-                    
-                        editable="false"
-                    />
-                </VBox>
-
-                <VBox>
-                    <Label text="Runner ID" />
-                    <Input
-                        value="{formData>/siteMaster/runner_id}"
-                        editable="false"
-                    />
-                </VBox>
-
-                <VBox>
-                    <Label text="Campaign No" />
-                    <Input
-                        value="{formData>/campinfo/campaign_no}"
-                        editable="false"
-                    />
-                </VBox>
-
-                <VBox>
-                    <Label text="Repair Status" />
-                    <Input
-                        value="{formData>/campinfo/repair_status}"
-                        editable="false"
-                    />
-                </VBox>
-
-                <VBox>
-                    <Label text="Minor Repair Status" />
-                    <Input
-                        value="{formData>/campinfo/minor_repair_status}"
-                        type="Number"
-                        editable="false"
-                    />
-                </VBox>
-            </layout:Grid>
-        </Panel> -->
         <Panel
             headerText="General Information"
             class="whiteCard"
         >
-            <!-- ================= ROW 1 ================= -->
+            <!-- ================= SINGLE ROW ================= -->
             <layout:Grid
-                defaultSpan="L6 M6 S12"
+                defaultSpan="L4 M6 S12"
                 hSpacing="1"
             >
                 <VBox>
@@ -276,58 +107,14 @@
                         editable="false"
                     />
                 </VBox>
-            </layout:Grid>
 
-            <!-- ================= ROW 2 ================= -->
-            <layout:Grid
-                defaultSpan="L6 M6 S12"
-                hSpacing="1"
-            >
                 <VBox>
                     <Label text="Furnace ID" />
-                    <Input
-                        value="{formData>/siteMaster/furnance_id}"
-                        editable="false"
-                    />
-                </VBox>
-
-                <VBox>
-                    <Label text="Runner ID" />
                     <Input
                         value="{formData>/siteMaster/runner_id}"
                         editable="false"
                     />
                 </VBox>
-            </layout:Grid>
-
-            <!-- ================= ROW 3 ================= -->
-            <layout:Grid
-                defaultSpan="L4 M4 S12"
-                hSpacing="1"
-            >
-                <!-- <VBox>
-                    <Label text="Campaign No" />
-                    <Input
-                        value="{formData>/campinfo/campaign_no}"
-                        editable="false"
-                    />
-                </VBox> -->
-
-                <!-- <VBox>
-                    <Label text="Repair Status" />
-                    <Input
-                        value="{formData>/campinfo/repair_status}"
-                        editable="false"
-                    />
-                </VBox>
-
-                <VBox>
-                    <Label text="Minor Repair Status" />
-                    <Input
-                        value="{formData>/campinfo/minor_repair_status}"
-                        editable="false"
-                    />
-                </VBox> -->
             </layout:Grid>
         </Panel>
 

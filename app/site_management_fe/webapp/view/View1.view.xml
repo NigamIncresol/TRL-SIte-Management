@@ -87,7 +87,7 @@
             headerText="General Information"
             class="whiteCard"
         >
-            <layout:Grid defaultSpan="L4 M6 S12">
+            <layout:Grid defaultSpan="L6 M6 S12">
                 <VBox>
                     <Label text="Customer" />
                     <ComboBox
@@ -107,7 +107,7 @@
                 </VBox>
 
                 <VBox>
-                    <Label text="Runner ID" />
+                    <Label text="Furnace ID" />
                     <Input
                         id="runnerId"
                         value="{/runnerId}"
@@ -115,47 +115,8 @@
                     />
                 </VBox>
 
-                <!-- <VBox>
-                    <Label text="Campaign No" />
-                    <Input
-                        id="campaign"
-                        value="{/campaignNo}"
-                        editable="false"
-                    />
-                </VBox>
-
                 <VBox>
-                    <Label text="Repair Status" />
-                    <ComboBox
-                        id="repairStatus"
-                        selectedKey="{/repairStatus}"
-                        selectionChange="onRepairStatusChange"
-                         width="100%" 
-                    >
-                        <items>
-                            <core:Item
-                                key="major"
-                                text="Major"
-                            />
-                            <core:Item
-                                key="minor"
-                                text="Minor"
-                            />
-                        </items>
-                    </ComboBox>
-                </VBox>
-
-                <VBox>
-                    <Label text="Minor Repair Status" />
-                    <Input
-                        id="minorRepairStatus"
-                        value="{/minorRepairStatus}"
-                        type="Number"
-                        change="onMinorRepairStatusChange"
-                    />
-                </VBox> -->
-                <VBox>
-                    <Label text="No of House / Production Line" />
+                    <Label text="No of Runner" />
                     <Input
                         id="lineCount"
                         type="Number"
@@ -168,21 +129,7 @@
             <HBox
                 justifyContent="End"
                 class="sapUiSmallMarginTop"
-            >
-                <!-- <Button
-                    id="btnCreate"
-                    text="Create"
-                    type="Emphasized"
-                    press="onCreateCampaign"
-                /> -->
-                <!-- <Button
-                    id="btnStopCampaign"
-                    text="Stop Campaign"
-                    type="Reject"
-                    class="sapUiTinyMarginBegin"
-                    press="onStopCampaign"
-                /> -->
-            </HBox>
+            />
         </Panel>
 
         <!-- DYNAMIC LINES -->
