@@ -8,7 +8,30 @@
     <Page
         showHeader="true"
         class="sapUiContentPadding sitePageBackground"
-    >
+    >   
+    <!-- ========== HEADER ========== -->
+        <customHeader>
+            <Bar class="headerBarFix">
+                <contentLeft>
+                    <Image
+                        src="/images/logo.png"
+                        height="40px"
+                        class="siteLogo"
+                    />
+                </contentLeft>
+                <contentMiddle>
+                    <HBox
+                        width="90%"
+                        justifyContent="Center"
+                    >
+                        <Text
+                            text="REPORTS"
+                            class="siteHeaderTitle"
+                        />
+                    </HBox>
+                </contentMiddle>
+            </Bar>
+        </customHeader>
         <Button
             text=""
             type="Back"
@@ -21,7 +44,7 @@
 
         <!-- HOUSE / PRODUCTION LINE 1 REPORT -->
         <Panel
-            headerText="Daily Wise "
+            headerText="Daily Wise - Production Data "
             class="whiteCard"
             expandable="true"
         >

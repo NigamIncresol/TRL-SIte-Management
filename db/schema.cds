@@ -121,6 +121,7 @@ entity Consumption : managed {
   key site_id                  : String(100);
   key productionLineName       : String(100);
   key consumption_date         : Date;
+  key shift_code               : String(10);
   key material                 : String(50);
       productionLine           : Association to SiteProductionLine;
       curr_campaign            : String(50);

@@ -55,6 +55,81 @@ sap.ui.define([
             const oRouter = sap.ui.core.UIComponent.getRouterFor(this);
             oRouter.navTo("Home");
         },
+        onSiteIdValueHelp: function () {
+            const oView = this.getView();
+
+            // Create dialog only once
+            if (!this._oSiteVHDialog) {
+                this._oSiteVHDialog = new sap.m.SelectDialog({
+                    title: "Select Site ID",
+
+                    liveChange: this._onSiteSearch.bind(this),
+
+                    confirm: this._onSiteSelect.bind(this),
+
+                    cancel: () => {
+                        this._oSiteVHDialog.close();
+                    },
+
+                    items: {
+                        path: "/sites",
+                        template: new sap.m.StandardListItem({
+                            title: "{site_id}",
+                            description: "{customer_name} - {location}"
+                        })
+                    }
+                });
+
+                oView.addDependent(this._oSiteVHDialog);
+            }
+
+            // Bind SiteMaster from backend
+            const oListBinding = this.getOwnerComponent()
+                .getModel()
+                .bindList("/siteMaster");
+
+            oListBinding.requestContexts()
+                .then(aContexts => {
+                    const aSites = aContexts.map(oCtx => oCtx.getObject());
+
+                    const oVHModel = new sap.ui.model.json.JSONModel({
+                        sites: aSites
+                    });
+
+                    this._oSiteVHDialog.setModel(oVHModel);
+                    this._oSiteVHDialog.open();
+                })
+                .catch(err => {
+                    sap.m.MessageToast.show("Failed to load Site IDs");
+                    console.error(err);
+                });
+        },
+
+        _onSiteSearch: function (oEvent) {
+            const sValue = oEvent.getParameter("value");
+
+            const oFilter = new sap.ui.model.Filter(
+                "site_id",
+                sap.ui.model.FilterOperator.Contains,
+                sValue
+            );
+
+            oEvent.getSource().getBinding("items").filter([oFilter]);
+        },
+
+        _onSiteSelect: function (oEvent) {
+            const oItem = oEvent.getParameter("selectedItem");
+            if (!oItem) return;
+
+            this.byId("siteId").setValue(oItem.getTitle());
+            this._oSiteVHDialog.close();
+        },
+
+        onSiteIdLiveChange: function (oEvent) {
+            oEvent.getSource().setValue("");
+            sap.m.MessageToast.show("Please select Site ID using value help");
+        }
+        ,
 
         /* =========================
            FIND BUTTON
@@ -63,6 +138,7 @@ sap.ui.define([
             var sSiteId = this.byId("siteId").getValue();
             var sFromDate = this.byId("fromDate").getDateValue();
             var sToDate = this.byId("toDate").getDateValue();
+            console.log("received search params", sFromDate, "---", sToDate);
 
             if (!sSiteId || !sFromDate || !sToDate) {
                 sap.m.MessageToast.show("Please fill all required fields!");
@@ -70,9 +146,17 @@ sap.ui.define([
             }
 
             // Format dates as yyyy-MM-dd
+            // var fnFormatDate = function (d) {
+            //     return d.toISOString().split("T")[0];
+            // };
             var fnFormatDate = function (d) {
-                return d.toISOString().split("T")[0];
+                // IST = UTC + 5 hours 30 minutes
+                var istOffset = 5.5 * 60 * 60 * 1000;
+                var istDate = new Date(d.getTime() + istOffset);
+
+                return istDate.toISOString().split("T")[0];
             };
+
 
             // Bind context to OData V4 function import
             var oContext = oODataModel.bindContext(
@@ -136,12 +220,14 @@ sap.ui.define([
                         new sap.m.Button({
                             text: "View",
                             type: "Emphasized",
+                            icon: "sap-icon://area-chart",
                             press: this.onViewChart.bind(this)
                         }),
                         new sap.m.ToolbarSpacer({ width: "1rem" }),
                         new sap.m.Button({
                             text: "Export",
                             type: "Success",
+                            icon: "sap-icon://excel-attachment",
                             press: this.onExportExcel.bind(this)
                         })
                     ]
@@ -358,11 +444,15 @@ sap.ui.define([
 
 
         , onExportExcel: function () {
+            // 1. Get site ID
+            var sSiteId = this.byId("siteId").getValue();
+
+            // 2. Get report data
             const aData = this.getView().getModel().getProperty("/reportData");
             if (!aData || !aData.length) return;
 
             /* =========================
-               1. BUILD COLUMNS DYNAMICALLY
+               3. BUILD COLUMNS DYNAMICALLY
             ========================= */
             const aKeys = Object.keys(aData[0]);
 
@@ -377,21 +467,29 @@ sap.ui.define([
             }));
 
             /* =========================
-               2. BUILD TIMESTAMPED FILE NAME
+               4. BUILD FILE NAME WITH DATE & TIME
             ========================= */
             const oNow = new Date();
-            const sTimestamp =
-                oNow.getFullYear() +
-                ("0" + (oNow.getMonth() + 1)).slice(-2) +
-                ("0" + oNow.getDate()).slice(-2) + "_" +
-                ("0" + oNow.getHours()).slice(-2) +
-                ("0" + oNow.getMinutes()).slice(-2) +
-                ("0" + oNow.getSeconds()).slice(-2);
 
-            const sFileName = `Production_Report_${sTimestamp}.xlsx`;
+            // Month abbreviations
+            const aMonths = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
+                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+            // Format date as "08JAN2026"
+            const sDate = ("0" + oNow.getDate()).slice(-2) + aMonths[oNow.getMonth()] + oNow.getFullYear();
+
+            // Format time as "h:mm AM/PM"
+            let iHour = oNow.getHours();
+            const sAMPM = iHour >= 12 ? "PM" : "AM";
+            iHour = iHour % 12;
+            if (iHour === 0) iHour = 12; // 12 AM or 12 PM
+            const sTime = iHour + ":" + ("0" + oNow.getMinutes()).slice(-2) + " " + sAMPM;
+
+            // Combine site ID, date, and time
+            const sFileName = `Production_Report_${sSiteId}_${sDate}_${sTime}.xlsx`;
 
             /* =========================
-               3. SPREADSHEET SETTINGS
+               5. SPREADSHEET SETTINGS
             ========================= */
             const oSettings = {
                 workbook: { columns: aColumns },
@@ -400,11 +498,12 @@ sap.ui.define([
             };
 
             /* =========================
-               4. CREATE & DOWNLOAD
+               6. CREATE & DOWNLOAD
             ========================= */
             const oSheet = new Spreadsheet(oSettings);
             oSheet.build().finally(() => oSheet.destroy());
         }
+
 
     });
 });
