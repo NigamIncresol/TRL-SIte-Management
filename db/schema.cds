@@ -97,7 +97,6 @@ entity SensorReading : managed {
   key shift_code               : String(10);
   key sensor_name              : String(100);
 
-
       curr_campaign            : String(50);
       curr_repair_status       : String(20);
       curr_minor_repair_status : Integer;

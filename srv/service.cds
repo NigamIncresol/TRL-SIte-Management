@@ -50,5 +50,13 @@ service siteManagementService {
     // dynamic columns like EAST_prod, WEST_prod, EAST_erosion, etc.
     };
 
+    function getDailyShiftSensorPivot(site_id: String,
+                                      productionLineName: String,
+                                      fromDate: Date,
+                                      toDate: Date)    returns array of {
+        date       : Date;
+        shift_code : String;
+    };
+
 
 }

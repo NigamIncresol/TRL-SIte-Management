@@ -2,7 +2,7 @@ const cds = require('@sap/cds');
 
 module.exports = cds.service.impl(async function () {
 
-    const { siteMaster, campaign, siteProductionLine, sensors, dailyProduction } = this.entities;
+    const { siteMaster, campaign, siteProductionLine, sensor, dailyProduction, sensorReading } = this.entities;
 
 
     this.before('CREATE', 'siteMaster', async (req) => {
@@ -103,52 +103,110 @@ module.exports = cds.service.impl(async function () {
         return `CAMP-${custCode}-${locCode}-${runnerCode}-${lineCode}-${seq}`;
     });
 
-   this.on('getDailyProductionPivot', async (req) => {
-    const { site_id, fromDate, toDate } = req.data;
+    //....................................................................................................................................
+    this.on('getDailyProductionPivot', async (req) => {
+        const { site_id, fromDate, toDate } = req.data;
 
-    if (!site_id || !fromDate || !toDate) {
-        req.error(400, "site_id, fromDate, and toDate are required");
-    }
-
-    const from = new Date(fromDate);
-    const to = new Date(toDate);
-    if (isNaN(from) || isNaN(to)) {
-        req.error(400, "fromDate and toDate must be valid dates");
-    }
-
-    const rows = await SELECT.from(dailyProduction)
-        .columns('production_date', 'productionLineName', 'production_data', 'erosion_data')
-        .where({ site_id })
-        .and('production_date', '>=', from)
-        .and('production_date', '<=', to)
-        .orderBy('production_date', 'productionLineName');
-
-    const pivot = {};
-    rows.forEach(r => {
-        let dateStr;
-        if (typeof r.production_date === 'string') {
-            dateStr = r.production_date.split('T')[0];
-        } else {
-            dateStr = r.production_date.toISOString().split('T')[0];
+        if (!site_id || !fromDate || !toDate) {
+            req.error(400, "site_id, fromDate, and toDate are required");
         }
 
-        if (!pivot[dateStr]) pivot[dateStr] = { date: dateStr, totalProd: 0 };
+        const from = new Date(fromDate);
+        const to = new Date(toDate);
+        if (isNaN(from) || isNaN(to)) {
+            req.error(400, "fromDate and toDate must be valid dates");
+        }
 
-        pivot[dateStr][`${r.productionLineName}_prod`] =
-            (pivot[dateStr][`${r.productionLineName}_prod`] || 0) + r.production_data;
+        const rows = await SELECT.from(dailyProduction)
+            .columns('production_date', 'productionLineName', 'production_data', 'erosion_data')
+            .where({ site_id })
+            .and('production_date', '>=', from)
+            .and('production_date', '<=', to)
+            .orderBy('production_date', 'productionLineName');
 
-        pivot[dateStr][`${r.productionLineName}_erosion`] =
-            (pivot[dateStr][`${r.productionLineName}_erosion`] || 0) + r.erosion_data;
+        const pivot = {};
+        rows.forEach(r => {
+            let dateStr;
+            if (typeof r.production_date === 'string') {
+                dateStr = r.production_date.split('T')[0];
+            } else {
+                dateStr = r.production_date.toISOString().split('T')[0];
+            }
 
-        pivot[dateStr].totalProd += r.production_data;
+            if (!pivot[dateStr]) pivot[dateStr] = { date: dateStr, totalProd: 0 };
+
+            pivot[dateStr][`${r.productionLineName}_prod`] =
+                (pivot[dateStr][`${r.productionLineName}_prod`] || 0) + r.production_data;
+
+            pivot[dateStr][`${r.productionLineName}_erosion`] =
+                (pivot[dateStr][`${r.productionLineName}_erosion`] || 0) + r.erosion_data;
+
+            pivot[dateStr].totalProd += r.production_data;
+        });
+
+        return Object.values(pivot);
     });
 
-    return Object.values(pivot);
-});
+    //.....................................................................................................................................
+    this.on('getDailyShiftSensorPivot', async (req) => {
+        const {
+            site_id,
+            productionLineName,
+            fromDate,
+            toDate
+        } = req.data;
 
+        /** 1️⃣ Fetch sensor master */
+        const sensors = await SELECT.from(sensor)
+            .columns('sensor_name', 'sensor_type');
 
+        const sensorTypeMap = {};
+        for (const s of sensors) {
+            // ✅ Business rule applied here
+            sensorTypeMap[s.sensor_name] =
+                s.sensor_type === 'SPG' ? 'OFF' : s.sensor_type;
+        }
 
+        /** 2️⃣ Fetch readings */
+        const readings = await SELECT.from(sensorReading)
+            .columns(
+                'reading_date',
+                'shift_code',
+                'sensor_name',
+                'reading'
+            )
+            .where({
+                site_id,
+                productionLineName,
+                reading_date: { between: fromDate, and: toDate }
+            });
 
+        /** 3️⃣ Pivot */
+        const pivot = {};
 
+        for (const row of readings) {
+            const key = `${row.reading_date}_${row.shift_code}`;
+
+            if (!pivot[key]) {
+                pivot[key] = {
+                    date: row.reading_date,
+                    shift_code: row.shift_code
+                };
+            }
+
+            const sensorType = sensorTypeMap[row.sensor_name] || 'UNKNOWN';
+            const col = `${row.sensor_name}_${sensorType}`;
+
+            pivot[key][col] =
+                (pivot[key][col] || 0) + row.reading;
+        }
+
+        return Object.values(pivot).sort((a, b) => {
+            if (a.date === b.date) {
+                return a.shift_code.localeCompare(b.shift_code);
+            }
+            return new Date(a.date) - new Date(b.date);
+        });
+    });
 });
 
