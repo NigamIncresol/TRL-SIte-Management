@@ -125,7 +125,7 @@
                             text="Find"
                             type="Emphasized"
                             width="100%"
-                            press="onFindPress"
+                            press="onFindPressDailyProduction"
                         />
                     </VBox>
 

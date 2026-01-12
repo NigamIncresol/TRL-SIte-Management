@@ -132,9 +132,9 @@ sap.ui.define([
         ,
 
         /* =========================
-           FIND BUTTON
+           FIND BUTTON FOR DAILY PRODUCTION
         ========================= */
-        onFindPress: function () {
+        onFindPressDailyProduction: function () {
             var sSiteId = this.byId("siteId").getValue();
             var sFromDate = this.byId("fromDate").getDateValue();
             var sToDate = this.byId("toDate").getDateValue();
