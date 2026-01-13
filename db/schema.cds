@@ -111,9 +111,9 @@ entity SensorReading : managed {
 entity Inventory : managed {
   key siteId              : String(100);
   key material            : String(50);
-  materialDescription : String(255);
-  quantity            : Decimal(15, 3);
-  batch               : String(50);
+      materialDescription : String(255);
+      quantity            : Decimal(15, 3);
+      batch               : String(50);
 }
 
 entity Consumption : managed {

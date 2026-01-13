@@ -203,3 +203,14 @@ GET http://localhost:4004/odata/v4/site-management/getDailyShiftSensorPivot(site
 Accept: application/json
 
 
+###
+GET http://localhost:4004/odata/v4/site-management/getCampaignsBySite(site_id='SITE-JINDAL-PUNE-NIGAM',productionLineName='EAST')
+Content-Type: application/json
+
+###
+GET http://localhost:4004/odata/v4/site-management/lifeAfterMajorMinorRepairProduction(site_id='SITE-JINDAL-PUNE-NIGAM',productionLineName='EAST',curr_campaign='CAMP-JINDAL-PUNE-NIGAM-EAST-002')
+Accept: application/json
+
+###
+GET http://localhost:4004/odata/v4/site-management/campaignwiseProduction(site_id='SITE-JINDAL-PUNE-NIGAM',productionLineName='EAST',curr_campaign='CAMP-JINDAL-PUNE-NIGAM-EAST-002')
+Accept: application/json

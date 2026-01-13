@@ -21,16 +21,19 @@ service siteManagementService {
 
 
     /* ================= ACTIONS / FUNCTIONS ================= */
+    function getCampaignsBySite(site_id: String, productionLineName: String) returns array of {
+        campaign : String;
+    };
 
     action   generateSiteId(customer_name: String,
                             location: String,
-                            runner_id: String)         returns {
+                            runner_id: String)                               returns {
         site_id : String;
     };
 
     function getLastCampaignNo(customer_name: String,
                                location: String,
-                               runner_id: String)      returns {
+                               runner_id: String)                            returns {
         campaign_no         : String;
         repair_status       : String;
         minor_repair_status : Integer;
@@ -40,11 +43,11 @@ service siteManagementService {
     function generateCampaignNumber(customer_name: String,
                                     location: String,
                                     runner_id: String,
-                                    line_name: String) returns String;
+                                    line_name: String)                       returns String;
 
     function getDailyProductionPivot(site_id: String,
                                      fromDate: Date,
-                                     toDate: Date)     returns array of {
+                                     toDate: Date)                           returns array of {
         date      : Date;
         totalProd : Integer;
     // dynamic columns like EAST_prod, WEST_prod, EAST_erosion, etc.
@@ -53,10 +56,31 @@ service siteManagementService {
     function getDailyShiftSensorPivot(site_id: String,
                                       productionLineName: String,
                                       fromDate: Date,
-                                      toDate: Date)    returns array of {
+                                      toDate: Date)                          returns array of {
         date       : Date;
         shift_code : String;
     };
 
+    function lifeAfterMajorMinorRepairProduction(site_id: String,
+                                                 productionLineName: String,
+                                                 curr_campaign: String)      returns array of {
+        date                : Date;
+        production          : Integer;
+        cumulativeprod      : Integer;
+        campaign            : String;
+        repair_status       : String;
+        minor_repair_status : Integer;
+    };
+
+    function campaignwiseProduction(site_id: String,
+                                    productionLineName: String,
+                                    curr_campaign: String)                   returns array of {
+        date                : Date;
+        production          : Integer;
+        cumulativeprod      : Integer;
+        campaign            : String;
+        repair_status       : String;
+        minor_repair_status : Integer;
+    };
 
 }
