@@ -199,7 +199,7 @@ GET http://localhost:4004/odata/v4/site-management/getDailyProductionPivot?site_
 Accept: application/json
 
 ###
-GET http://localhost:4004/odata/v4/site-management/getDailyShiftSensorPivot(site_id='SITE-JINDAL-PUNE-NIGAM',productionLineName='WEST',fromDate=2026-01-01,toDate=2026-01-31)
+GET http://localhost:4004/odata/v4/site-management/getDailyShiftSensorPivot(site_id='SITE-JINDAL-PUNE-NIGAM',productionLineName='EAST',fromDate=2026-01-01,toDate=2026-01-31)
 Accept: application/json
 
 

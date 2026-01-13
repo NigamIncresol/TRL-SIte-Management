@@ -132,119 +132,266 @@ sap.ui.define([
         ,
 
         /* =========================
+         Prodution Value Help
+        ========================= */
+        onProdLineLiveChange: function (oEvent) {
+            const oInput = oEvent.getSource();
+
+            // Clear typed value
+            oInput.setValue("");
+
+            // Inform user
+            MessageToast.show("Please select Line name using the value help", {
+                duration: 2000
+            });
+        },
+
+        onProdLineValueHelp: function () {
+            let enteredSiteId = this.byId("siteId").getValue();
+            if (!enteredSiteId) {
+                sap.m.MessageToast.show("Please select a Site ID !")
+                return;
+            }
+            const oView = this.getView();
+
+            // Create dialog only once
+            if (!this._oProdVHDialog) {
+                this._oProdVHDialog = new sap.m.SelectDialog({
+                    title: "Select Runner",
+
+                    liveChange: (oEvent) => {
+                        this._onProdLineSearch(oEvent);
+                    },
+
+                    confirm: (oEvent) => {
+                        this._onProdLineSelect(oEvent);
+                    },
+
+                    cancel: () => {
+                        this._oProdVHDialog.close();
+                    },
+
+                    items: {
+                        path: "/prods",
+                        template: new sap.m.StandardListItem({
+                            title: "{line_name}",
+                            description: "Site ID : {site_site_id}"
+                        })
+                    }
+                });
+
+                oView.addDependent(this._oProdVHDialog);
+            }
+
+
+
+
+            // Bind context with nested $expand (no encodeURIComponent)
+            const oContextBinding = oODataModel.bindContext(
+                `/siteMaster(site_id='${enteredSiteId}')`,
+                null,
+                {
+                    $expand: {
+                        productionLines: {
+                            $expand: {
+                                sensors: true
+                            }
+                        }
+                    }
+                }
+            );
+
+            // Request data
+            oContextBinding.requestObject().then(res => {
+
+                console.log("received whole site data", res);
+
+                // Store complete data for future use
+                this.siteMasterCompleteData = res;
+
+                const aProds = res.productionLines || [];
+
+                const oModel = new sap.ui.model.json.JSONModel({
+                    prods: aProds
+                });
+
+                this._oProdVHDialog.setModel(oModel);
+                this._oProdVHDialog.open();
+
+            }).catch(err => {
+
+                sap.m.MessageToast.show("Failed to load Runners.");
+                console.error(err);
+
+            });
+
+        },
+        _onProdLineSearch: function (oEvent) {
+            const sValue = oEvent.getParameter("value");
+
+            const oFilter = new sap.ui.model.Filter(
+                "line_name",
+                sap.ui.model.FilterOperator.Contains,
+                sValue
+            );
+
+            oEvent.getSource().getBinding("items").filter([oFilter]);
+        },
+
+        _onProdLineSelect: function (oEvent) {
+            const oItem = oEvent.getParameter("selectedItem");
+            if (!oItem) return;
+
+            const slineName = oItem.getTitle();
+
+            const oInput = this.byId("ProductionLineId1");
+
+            //  Set value
+            oInput.setValue(slineName);
+
+            this._oProdVHDialog.close();
+        }
+        ,
+
+        /* =========================
            FIND BUTTON FOR DAILY PRODUCTION
         ========================= */
         onFindPressDailyProduction: function () {
+            console.log("=== onFindPressDailyProduction START ===");
+
             var sSiteId = this.byId("siteId").getValue();
             var sFromDate = this.byId("fromDate").getDateValue();
             var sToDate = this.byId("toDate").getDateValue();
-            console.log("received search params", sFromDate, "---", sToDate);
+
+            console.log("Site ID:", sSiteId);
+            console.log("From Date (raw):", sFromDate);
+            console.log("To Date (raw):", sToDate);
 
             if (!sSiteId || !sFromDate || !sToDate) {
+                console.warn("Validation failed – missing required fields");
                 sap.m.MessageToast.show("Please fill all required fields!");
                 return;
             }
 
-            // Format dates as yyyy-MM-dd
-            // var fnFormatDate = function (d) {
-            //     return d.toISOString().split("T")[0];
-            // };
+            // IST date formatter
             var fnFormatDate = function (d) {
-                // IST = UTC + 5 hours 30 minutes
                 var istOffset = 5.5 * 60 * 60 * 1000;
-                var istDate = new Date(d.getTime() + istOffset);
-
-                return istDate.toISOString().split("T")[0];
+                return new Date(d.getTime() + istOffset)
+                    .toISOString()
+                    .split("T")[0];
             };
 
+            var sFormattedFromDate = fnFormatDate(sFromDate);
+            var sFormattedToDate = fnFormatDate(sToDate);
 
-            // Bind context to OData V4 function import
-            var oContext = oODataModel.bindContext(
-                `/getDailyProductionPivot(site_id='${sSiteId}',fromDate='${fnFormatDate(sFromDate)}',toDate='${fnFormatDate(sToDate)}')`
-            );
+            console.log("Formatted From Date:", sFormattedFromDate);
+            console.log("Formatted To Date:", sFormattedToDate);
 
-            // Call the API
-            oContext.requestObject().then(function (oResponse) {
-                // Extract the actual array from 'value'
-                var aReportData = oResponse.value || [];
-                console.log("API Pivot Data", aReportData);
+            var sFunctionPath =
+                `/getDailyProductionPivot(` +
+                `site_id='${sSiteId}',` +
+                `fromDate='${sFormattedFromDate}',` +
+                `toDate='${sFormattedToDate}'` +
+                `)`;
 
-                if (aReportData.length === 0) {
-                    sap.m.MessageToast.show("No data found for selected filters");
-                }
+            console.log("OData Function Import Path:", sFunctionPath);
 
-                // Create JSONModel
-                const oModel = new sap.ui.model.json.JSONModel({ reportData: aReportData });
-                this.getView().setModel(oModel);
+            var oContext = oODataModel.bindContext(sFunctionPath);
 
-                // Clear container
-                const oContainer = this.byId("tableContainer");
-                oContainer.removeAllItems();
+            oContext.requestObject()
+                .then(function (oResponse) {
+                    console.log("API Raw Response:", oResponse);
 
-                /* =========================
-                   DATA-DRIVEN TABLE
-                ========================= */
-                const oTable = new sap.ui.table.Table({
-                    rows: "{/reportData}",
-                    visibleRowCount: 8,
-                    selectionMode: "None",
-                    width: "100%",
-                    class: "sapUiLargeMarginTop"
-                });
+                    var aReportData = oResponse.value || [];
+                    console.log("Extracted Pivot Data:", aReportData);
 
-                // Dynamically create columns from keys
-                if (aReportData.length > 0) {
+                    if (!aReportData.length) {
+                        sap.m.MessageToast.show("No data found for selected filters");
+                        return;
+                    }
+
+                    // ✅ Named model
+                    var oDailyProductionModel = new sap.ui.model.json.JSONModel({
+                        reportData: aReportData
+                    });
+                    this.getView().setModel(oDailyProductionModel, "dailyProductionModel");
+
+                    const oContainer = this.byId("tableContainer");
+                    oContainer.removeAllItems();
+
+                    const oTable = new sap.ui.table.Table({
+                        rows: "{dailyProductionModel>/reportData}",
+                        visibleRowCountMode: "Auto",
+                        selectionMode: "None",
+                        width: "100%"
+                    });
+
+                    oTable.addStyleClass("sapUiLargeMarginTop");
+
                     const aKeys = Object.keys(aReportData[0]);
+                    console.log("Dynamic Column Keys:", aKeys);
+
                     aKeys.forEach(function (sKey) {
-                        // Generate column label: remove special chars, underscores, split camelCase, uppercase
                         const sLabel = sKey
-                            .replace(/_/g, " ")                   // underscores → space
-                            .replace(/([a-z])([A-Z])/g, "$1 $2") // split camelCase
-                            .replace(/[^a-zA-Z0-9 ]/g, "")       // remove special characters
-                            .toUpperCase();                       // all uppercase
+                            .replace(/_/g, " ")
+                            .replace(/([a-z])([A-Z])/g, "$1 $2")
+                            .replace(/[^a-zA-Z0-9 ]/g, "")
+                            .toUpperCase();
 
                         oTable.addColumn(new sap.ui.table.Column({
                             label: new sap.m.Label({ text: sLabel }),
-                            template: new sap.m.Text({ text: `{${sKey}}` })
+                            template: new sap.m.Text({
+                                text: `{dailyProductionModel>${sKey}}`
+                            })
                         }));
                     });
-                }
 
-                oContainer.addItem(oTable);
+                    oContainer.addItem(oTable);
 
-                // Add action buttons
-                const oButtonBox = new sap.m.HBox({
-                    class: "sapUiSmallMarginTop",
-                    alignItems: "Center",
-                    items: [
-                        new sap.m.Button({
-                            text: "View",
-                            type: "Emphasized",
-                            icon: "sap-icon://area-chart",
-                            press: this.onViewChart.bind(this)
-                        }),
-                        new sap.m.ToolbarSpacer({ width: "1rem" }),
-                        new sap.m.Button({
-                            text: "Export",
-                            type: "Success",
-                            icon: "sap-icon://excel-attachment",
-                            press: this.onExportExcel.bind(this)
-                        })
-                    ]
+                    const oButtonBox = new sap.m.HBox({
+                        alignItems: "Center"
+                    });
+                    oButtonBox.addStyleClass("sapUiSmallMarginTop");
+
+                    oButtonBox.addItem(new sap.m.Button({
+                        text: "View production ",
+                        type: "Emphasized",
+                        icon: "sap-icon://area-chart",
+                        press: this.onViewDailyProductionChart.bind(this)
+                    }));
+
+                    oButtonBox.addItem(new sap.m.ToolbarSpacer({ width: "1rem" }));
+
+                    oButtonBox.addItem(new sap.m.Button({
+                        text: "Export production ",
+                        type: "Success",
+                        icon: "sap-icon://excel-attachment",
+                        press: this.onExportExcel.bind(this, "PRODUCTION")
+                    }));
+
+                    oContainer.addItem(oButtonBox);
+
+                    console.log("=== onFindPressDailyProduction SUCCESS ===");
+
+                }.bind(this))
+                .catch(function (err) {
+                    console.error("API Error:", err);
+                    sap.m.MessageToast.show("Error fetching data from API");
                 });
-                oContainer.addItem(oButtonBox);
-
-            }.bind(this)).catch(function (err) {
-                console.error(err);
-                sap.m.MessageToast.show("Error fetching data from API");
-            });
         }
 
 
-        ,
-        onViewChart: function () {
 
-            const oModel = this.getView().getModel();
+        ,
+        onViewDailyProductionChart: function () {
+
+            // ✅ Use named production model
+            const oModel = this.getView().getModel("dailyProductionModel");
+            if (!oModel) {
+                console.warn("dailyProductionModel not found");
+                return;
+            }
+
             const aReportData = oModel.getProperty("/reportData");
 
             if (!aReportData || !aReportData.length) {
@@ -257,21 +404,24 @@ sap.ui.define([
             ========================= */
             const aKeys = Object.keys(aReportData[0]);
 
-            // Case-insensitive filtering
-            const aProdKeys = aKeys.filter(k => k.toLowerCase().endsWith("prod") && k.toLowerCase() !== "totalprod");
-            const aErosionKeys = aKeys.filter(k => k.toLowerCase().endsWith("erosion"));
+            const aProdKeys = aKeys.filter(
+                k => k.toLowerCase().endsWith("prod") && k.toLowerCase() !== "totalprod"
+            );
+            const aErosionKeys = aKeys.filter(
+                k => k.toLowerCase().endsWith("erosion")
+            );
 
-            console.log("All keys in dataset:", aKeys);
-            console.log("Production keys (aProdKeys):", aProdKeys);
-            console.log("Erosion keys (aErosionKeys):", aErosionKeys);
+            console.log("All keys:", aKeys);
+            console.log("Production keys:", aProdKeys);
+            console.log("Erosion keys:", aErosionKeys);
 
             if (!aProdKeys.length && !aErosionKeys.length) {
-                console.warn("No production or erosion keys found. Chart cannot be rendered.");
+                console.warn("No production or erosion keys found");
                 return;
             }
 
             /* =========================
-               2. LABEL FUNCTION (UPPERCASE, NO UNDERSCORE)
+               2. LABEL FUNCTION
             ========================= */
             const fnLabel = function (sKey) {
                 return sKey.replace(/_/g, " ").toUpperCase();
@@ -283,14 +433,14 @@ sap.ui.define([
             const oProdDataset = new FlattenedDataset({
                 dimensions: [{
                     name: "Date",
-                    value: "{date}"
+                    value: "{dailyProductionModel>date}"
                 }],
                 measures: aProdKeys.map(k => ({
                     name: fnLabel(k),
-                    value: `{${k}}`
+                    value: `{dailyProductionModel>${k}}`
                 })),
                 data: {
-                    path: "/reportData"
+                    path: "dailyProductionModel>/reportData"
                 }
             });
 
@@ -300,14 +450,14 @@ sap.ui.define([
             const oErosionDataset = new FlattenedDataset({
                 dimensions: [{
                     name: "Date",
-                    value: "{date}"
+                    value: "{dailyProductionModel>date}"
                 }],
                 measures: aErosionKeys.map(k => ({
                     name: fnLabel(k),
-                    value: `{${k}}`
+                    value: `{dailyProductionModel>${k}}`
                 })),
                 data: {
-                    path: "/reportData"
+                    path: "dailyProductionModel>/reportData"
                 }
             });
 
@@ -323,7 +473,7 @@ sap.ui.define([
                     dataset: oProdDataset
                 });
 
-                oProdChart.setModel(oModel);
+                oProdChart.setModel(oModel, "dailyProductionModel");
 
                 oProdChart.addFeed(new FeedItem({
                     uid: "categoryAxis",
@@ -338,23 +488,12 @@ sap.ui.define([
                 }));
 
                 oProdChart.setVizProperties({
-                    title: {
-                        text: "Production Trend"
-                    },
-                    plotArea: {
-                        dataLabel: {
-                            visible: true
-                        }
-                    },
+                    title: { text: "Production Trend" },
+                    plotArea: { dataLabel: { visible: true } },
                     valueAxis: {
-                        title: {
-                            visible: true,
-                            text: "Production"  // <-- Set Y-axis label here
-                        }
+                        title: { visible: true, text: "Production" }
                     },
-                    legend: {
-                        visible: true
-                    }
+                    legend: { visible: true }
                 });
             }
 
@@ -370,7 +509,7 @@ sap.ui.define([
                     dataset: oErosionDataset
                 });
 
-                oErosionChart.setModel(oModel);
+                oErosionChart.setModel(oModel, "dailyProductionModel");
 
                 oErosionChart.addFeed(new FeedItem({
                     uid: "categoryAxis",
@@ -385,23 +524,12 @@ sap.ui.define([
                 }));
 
                 oErosionChart.setVizProperties({
-                    title: {
-                        text: "Erosion Trend"
-                    },
-                    plotArea: {
-                        dataLabel: {
-                            visible: true
-                        }
-                    },
+                    title: { text: "Erosion Trend" },
+                    plotArea: { dataLabel: { visible: true } },
                     valueAxis: {
-                        title: {
-                            visible: true,
-                            text: "Erosion"  // <-- Set Y-axis label here
-                        }
+                        title: { visible: true, text: "Erosion" }
                     },
-                    legend: {
-                        visible: true
-                    }
+                    legend: { visible: true }
                 });
             }
 
@@ -413,7 +541,7 @@ sap.ui.define([
             if (oErosionChart) items.push(oErosionChart);
 
             if (!items.length) {
-                console.warn("No charts to display.");
+                console.warn("No charts to display");
                 return;
             }
 
@@ -443,66 +571,389 @@ sap.ui.define([
         }
 
 
-        , onExportExcel: function () {
-            // 1. Get site ID
-            var sSiteId = this.byId("siteId").getValue();
 
-            // 2. Get report data
-            const aData = this.getView().getModel().getProperty("/reportData");
-            if (!aData || !aData.length) return;
+
+
+        , onFindPressDailyTemperature: function () {
+            console.log("=== onFindPressDailyTemperature START ===");
+
+            var sSiteId = this.byId("siteId").getValue();
+            var sProductionLine = this.byId("ProductionLineId1").getValue();
+            var dFromDate = this.byId("fromDate").getDateValue();
+            var dToDate = this.byId("toDate").getDateValue();
+
+            if (!sSiteId || !sProductionLine || !dFromDate || !dToDate) {
+                sap.m.MessageToast.show("Please fill all required fields!");
+                return;
+            }
+
+            // IST date formatter
+            var fnFormatDate = function (d) {
+                var istOffset = 5.5 * 60 * 60 * 1000;
+                return new Date(d.getTime() + istOffset)
+                    .toISOString()
+                    .split("T")[0];
+            };
+
+            var sFromDate = fnFormatDate(dFromDate);
+            var sToDate = fnFormatDate(dToDate);
+
+            var sFunctionPath =
+                `/getDailyShiftSensorPivot(` +
+                `site_id='${sSiteId}',` +
+                `productionLineName='${sProductionLine}',` +
+                `fromDate='${sFromDate}',` +
+                `toDate='${sToDate}'` +
+                `)`;
+
+            var oContext = oODataModel.bindContext(sFunctionPath);
+
+            oContext.requestObject()
+                .then(function (oResponse) {
+
+                    var aData = oResponse.value || [];
+
+                    if (!aData.length) {
+                        sap.m.MessageToast.show("No data found");
+                        return;
+                    }
+
+                    // ✅ Named model (same pattern as production)
+                    var oDailyTemperatureModel = new sap.ui.model.json.JSONModel({
+                        temperatureData: aData
+                    });
+                    this.getView().setModel(oDailyTemperatureModel, "dailyTemperatureModel");
+
+                    var oContainer = this.byId("temperatureTableContainer");
+                    oContainer.removeAllItems();
+
+                    // Table
+                    var oTable = new sap.ui.table.Table({
+                        rows: "{dailyTemperatureModel>/temperatureData}",
+                        visibleRowCountMode: "Auto",
+                        selectionMode: "None",
+                        width: "100%"
+                    });
+
+                    oTable.addStyleClass("sapUiLargeMarginTop");
+
+                    // Dynamic columns
+                    var aKeys = Object.keys(aData[0]);
+
+                    aKeys.forEach(function (sKey) {
+                        oTable.addColumn(new sap.ui.table.Column({
+                            label: new sap.m.Label({
+                                text: sKey.replace(/_/g, " ").toUpperCase()
+                            }),
+                            template: new sap.m.Text({
+                                text: `{dailyTemperatureModel>${sKey}}`
+                            })
+                        }));
+                    });
+
+                    oContainer.addItem(oTable);
+
+                    // ✅ Buttons (same as production)
+                    const oButtonBox = new sap.m.HBox({
+                        alignItems: "Center"
+                    });
+                    oButtonBox.addStyleClass("sapUiSmallMarginTop");
+                    oButtonBox.addItem(new sap.m.Button({
+                        text: "View Temperature",
+                        type: "Emphasized",
+                        icon: "sap-icon://area-chart",
+                        press: this.onViewDailyTemperatureChart.bind(this, "TEMPERATURE")
+                    }));
+                    oButtonBox.addItem(new sap.m.ToolbarSpacer({ width: "1rem" }));
+
+                    oButtonBox.addItem(new sap.m.Button({
+                        text: "Export Tempature",
+                        type: "Success",
+                        icon: "sap-icon://excel-attachment",
+                        press: this.onExportExcel.bind(this, "TEMPERATURE")
+
+                    }));
+
+                    oContainer.addItem(oButtonBox);
+
+                    console.log("=== onFindPressDailyTemperature SUCCESS ===");
+
+                }.bind(this))
+                .catch(function (err) {
+                    console.error("Temperature API Error:", err);
+                    sap.m.MessageToast.show("Error fetching temperature data");
+                });
+        }, onExportExcel: function (sReportType) {
+
+            var sSiteId = this.byId("siteId").getValue() || "SITE";
+            let aData = null;
 
             /* =========================
-               3. BUILD COLUMNS DYNAMICALLY
+               1. PICK DATA BASED ON BUTTON CLICK
+            ========================= */
+            if (sReportType === "PRODUCTION") {
+
+                const oProdModel = this.getView().getModel("dailyProductionModel");
+                if (oProdModel) {
+                    aData = oProdModel.getProperty("/reportData");
+                }
+
+            } else if (sReportType === "TEMPERATURE") {
+
+                const oTempModel = this.getView().getModel("dailyTemperatureModel");
+                if (oTempModel) {
+                    aData = oTempModel.getProperty("/temperatureData");
+                }
+            }
+
+            if (!aData || !aData.length) {
+                sap.m.MessageToast.show("No data available to export");
+                return;
+            }
+
+            /* =========================
+               2. BUILD COLUMNS DYNAMICALLY
             ========================= */
             const aKeys = Object.keys(aData[0]);
 
             const aColumns = aKeys.map(sKey => ({
                 label: sKey
-                    .replace(/_/g, " ")                  // underscores → space
-                    .replace(/([a-z])([A-Z])/g, "$1 $2") // split camelCase
-                    .replace(/[^a-zA-Z0-9 ]/g, "")       // remove special chars
-                    .toUpperCase(),                       // uppercase
+                    .replace(/_/g, " ")
+                    .replace(/([a-z])([A-Z])/g, "$1 $2")
+                    .replace(/[^a-zA-Z0-9 ]/g, "")
+                    .toUpperCase(),
                 property: sKey,
-                type: exportLibrary.EdmType.Number
+                type: exportLibrary.EdmType.String
             }));
 
             /* =========================
-               4. BUILD FILE NAME WITH DATE & TIME
+               3. FILE NAME
             ========================= */
             const oNow = new Date();
+            const aMonths = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-            // Month abbreviations
-            const aMonths = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN",
-                "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            const sDate =
+                ("0" + oNow.getDate()).slice(-2) +
+                aMonths[oNow.getMonth()] +
+                oNow.getFullYear();
 
-            // Format date as "08JAN2026"
-            const sDate = ("0" + oNow.getDate()).slice(-2) + aMonths[oNow.getMonth()] + oNow.getFullYear();
-
-            // Format time as "h:mm AM/PM"
             let iHour = oNow.getHours();
             const sAMPM = iHour >= 12 ? "PM" : "AM";
-            iHour = iHour % 12;
-            if (iHour === 0) iHour = 12; // 12 AM or 12 PM
-            const sTime = iHour + ":" + ("0" + oNow.getMinutes()).slice(-2) + " " + sAMPM;
+            iHour = iHour % 12 || 12;
 
-            // Combine site ID, date, and time
-            const sFileName = `Production_Report_${sSiteId}_${sDate}_${sTime}.xlsx`;
+            const sTime =
+                iHour + ":" +
+                ("0" + oNow.getMinutes()).slice(-2) +
+                " " + sAMPM;
+
+            const sFileName =
+                `${sReportType}_REPORT_${sSiteId}_${sDate}_${sTime}.xlsx`;
 
             /* =========================
-               5. SPREADSHEET SETTINGS
+               4. EXPORT
             ========================= */
-            const oSettings = {
+            const oSheet = new Spreadsheet({
                 workbook: { columns: aColumns },
                 dataSource: aData,
                 fileName: sFileName
-            };
+            });
 
-            /* =========================
-               6. CREATE & DOWNLOAD
-            ========================= */
-            const oSheet = new Spreadsheet(oSettings);
             oSheet.build().finally(() => oSheet.destroy());
         }
+
+
+
+
+        , onViewDailyTemperatureChart: function () {
+
+    /* =========================
+       1. GET MODEL & DATA
+    ========================= */
+    const oModel = this.getView().getModel("dailyTemperatureModel");
+    if (!oModel) {
+        console.warn("dailyTemperatureModel not found");
+        return;
+    }
+
+    const aData = oModel.getProperty("/temperatureData");
+    if (!aData || !aData.length) {
+        console.warn("No temperature data available");
+        return;
+    }
+
+    /* =========================
+       2. DETECT SENSOR KEYS
+    ========================= */
+    const aKeys = Object.keys(aData[0]);
+    const aSensorKeys = aKeys.filter(k =>
+        k !== "date" &&
+        k !== "shift_code"
+    );
+
+    if (!aSensorKeys.length) {
+        console.warn("No sensor keys found");
+        return;
+    }
+
+    /* =========================
+       3. LABEL FORMATTER
+    ========================= */
+    const fnLabel = function (sKey) {
+        return sKey.replace(/_/g, " ").toUpperCase();
+    };
+
+    /* =====================================================
+       CHART 1: DAILY-SHIFT WISE TEMPERATURE TREND
+    ===================================================== */
+
+    const aPreparedShiftData = aData.map(o => ({
+        ...o,
+        xAxisLabel: o.date + " - " + o.shift_code
+    }));
+
+    oModel.setProperty("/_shiftWiseChartData", aPreparedShiftData);
+
+    const oShiftDataset = new sap.viz.ui5.data.FlattenedDataset({
+        dimensions: [{
+            name: "Date / Shift",
+            value: "{dailyTemperatureModel>xAxisLabel}"
+        }],
+        measures: aSensorKeys.map(k => ({
+            name: fnLabel(k),
+            value: `{dailyTemperatureModel>${k}}`
+        })),
+        data: {
+            path: "dailyTemperatureModel>/_shiftWiseChartData"
+        }
+    });
+
+    const oShiftChart = new sap.viz.ui5.controls.VizFrame({
+        vizType: "line",
+        width: "100%",
+        height: "350px",
+        dataset: oShiftDataset
+    });
+
+    oShiftChart.setModel(oModel, "dailyTemperatureModel");
+
+    oShiftChart.addFeed(new sap.viz.ui5.controls.common.feeds.FeedItem({
+        uid: "categoryAxis",
+        type: "Dimension",
+        values: ["Date / Shift"]
+    }));
+
+    oShiftChart.addFeed(new sap.viz.ui5.controls.common.feeds.FeedItem({
+        uid: "valueAxis",
+        type: "Measure",
+        values: aSensorKeys.map(fnLabel)
+    }));
+
+    oShiftChart.setVizProperties({
+        title: { text: "Daily-Shift Wise Temperature Trend" },
+        plotArea: { dataLabel: { visible: false } },
+        valueAxis: {
+            title: { visible: true, text: "Temperature" }
+        },
+        legend: { visible: true }
+    });
+
+    /* =====================================================
+       CHART 2: DATE-WISE HIGHEST TEMPERATURE (ALL SENSORS)
+    ===================================================== */
+
+    const oMaxByDate = {};
+
+    aData.forEach(o => {
+        const sDate = o.date;
+
+        if (!oMaxByDate[sDate]) {
+            oMaxByDate[sDate] = { date: sDate };
+        }
+
+        aSensorKeys.forEach(sKey => {
+            const fVal = Number(o[sKey]);
+
+            if (
+                oMaxByDate[sDate][sKey] === undefined ||
+                fVal > oMaxByDate[sDate][sKey]
+            ) {
+                oMaxByDate[sDate][sKey] = fVal;
+            }
+        });
+    });
+
+    const aDateWiseMaxData = Object.values(oMaxByDate);
+    oModel.setProperty("/_dateWiseMaxChartData", aDateWiseMaxData);
+
+    const oMaxDataset = new sap.viz.ui5.data.FlattenedDataset({
+        dimensions: [{
+            name: "Date",
+            value: "{dailyTemperatureModel>date}"
+        }],
+        measures: aSensorKeys.map(k => ({
+            name: fnLabel(k),
+            value: `{dailyTemperatureModel>${k}}`
+        })),
+        data: {
+            path: "dailyTemperatureModel>/_dateWiseMaxChartData"
+        }
+    });
+
+    const oMaxChart = new sap.viz.ui5.controls.VizFrame({
+        vizType: "line",
+        width: "100%",
+        height: "350px",
+        dataset: oMaxDataset
+    });
+
+    oMaxChart.setModel(oModel, "dailyTemperatureModel");
+
+    oMaxChart.addFeed(new sap.viz.ui5.controls.common.feeds.FeedItem({
+        uid: "categoryAxis",
+        type: "Dimension",
+        values: ["Date"]
+    }));
+
+    oMaxChart.addFeed(new sap.viz.ui5.controls.common.feeds.FeedItem({
+        uid: "valueAxis",
+        type: "Measure",
+        values: aSensorKeys.map(fnLabel)
+    }));
+
+    oMaxChart.setVizProperties({
+        title: { text: "Date Wise Highest Temperature Trend (All Sensors)" },
+        plotArea: { dataLabel: { visible: false } },
+        valueAxis: {
+            title: { visible: true, text: "Temperature" }
+        },
+        legend: { visible: true }
+    });
+
+    /* =========================
+       4. DIALOG
+    ========================= */
+    const oDialog = new sap.m.Dialog({
+        title: "Temperature Sensor Trends",
+        contentWidth: "90%",
+        contentHeight: "800px",
+        resizable: true,
+        draggable: true,
+        content: [
+            oShiftChart,
+            oMaxChart
+        ],
+        endButton: new sap.m.Button({
+            text: "Close",
+            press: function () {
+                oDialog.close();
+                oDialog.destroy();
+            }
+        })
+    });
+
+    oDialog.open();
+}
+
 
 
     });

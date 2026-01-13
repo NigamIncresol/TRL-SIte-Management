@@ -4,12 +4,13 @@
     xmlns="sap.m"
     xmlns:layout="sap.ui.layout"
     xmlns:core="sap.ui.core"
+    xmlns:tnt="sap.tnt"
 >
     <Page
         showHeader="true"
         class="sapUiContentPadding sitePageBackground"
-    >   
-    <!-- ========== HEADER ========== -->
+    >
+        <!-- ========== HEADER ========== -->
         <customHeader>
             <Bar class="headerBarFix">
                 <contentLeft>
@@ -40,13 +41,11 @@
 
         <!-- HEADER -->
 
-        <!-- REPORT FILTER / INFO -->
-
-        <!-- HOUSE / PRODUCTION LINE 1 REPORT -->
+        <!-- Search Field -->
         <Panel
-            headerText="Daily Wise - Production Data "
+            headerText="Search "
             class="whiteCard"
-            expandable="true"
+            expandable="false"
         >
             <content>
                 <HBox
@@ -69,9 +68,22 @@
                             valueHelpRequest="onSiteIdValueHelp"
                         />
                     </VBox>
+                    <VBox width="25%">
+                        <Label
+                            text="Runner"
+                            required="true"
+                        />
+                        <Input
+                            id="ProductionLineId1"
+                            placeholder="Enter Runner"
+                            showValueHelp="true"
+                            liveChange="onProdLineLiveChange"
+                            valueHelpRequest="onProdLineValueHelp"
+                        />
+                    </VBox>
 
                     <!-- From Date -->
-                    <VBox width="25%">
+                    <VBox width="15%">
                         <Label
                             text="From Date"
                             required="true"
@@ -85,7 +97,7 @@
                     </VBox>
 
                     <!-- To Date -->
-                    <VBox width="25%">
+                    <VBox width="15%">
                         <Label
                             text="To Date"
                             required="true"
@@ -98,28 +110,8 @@
                         />
                     </VBox>
 
-                    <!-- Shift -->
-                    <!-- <VBox>
-                <Label
-                    text="Shift"
-                    required="true"
-                />
-                <Select
-                    id="shiftSelect"
-                    selectedKey="{formData>/shift}"
-                    forceSelection="true"
-                    editable="true"
-                >
-                    <items>
-                        <core:Item key="A" text="A" />
-                        <core:Item key="B" text="B" />
-                        <core:Item key="C" text="C" />
-                    </items>
-                </Select>
-            </VBox> -->
-
                     <!-- Find Button -->
-                    <VBox width="8%">
+                    <!-- <VBox width="8%">
                         <Label text=" " />
                         <Button
                             text="Find"
@@ -127,14 +119,104 @@
                             width="100%"
                             press="onFindPressDailyProduction"
                         />
-                    </VBox>
+                    </VBox> -->
 
-                    <VBox
+                    <!-- <VBox
                         id="tableContainer"
                         width="100%"
                         class="sapUiSmallMarginTop"
-                    />
+                    /> -->
                 </HBox>
+            </content>
+        </Panel>
+
+        <!-- HOUSE / PRODUCTION LINE 1 REPORT -->
+        <Panel
+            headerText="Daily Wise - Production Data"
+            class="whiteCard"
+            expandable="true"
+        >
+            <content>
+                <!-- Side-by-side layout -->
+                <HBox
+                    width="100%"
+                    alignItems="Center"
+                    justifyContent="Start"
+                    class="sapUiSmallMarginBottom"
+                >
+                    <!-- Button (LEFT) -->
+                    <VBox
+                        width="20%"
+                        class="sapUiSmallMarginEnd"
+                    >
+                        <Button
+                            text="Find Production Data"
+                            type="Success"
+                            width="100%"
+                            press="onFindPressDailyProduction"
+                        />
+                    </VBox>
+
+                    <!-- Red Info Message (RIGHT) -->
+                    <VBox width="80%">
+                        <tnt:InfoLabel
+                            text="Required fields: Site ID, From Date, and To Date"
+                            colorScheme="1"
+                        />
+                    </VBox>
+                </HBox>
+
+                <!-- Table Container -->
+                <VBox
+                    id="tableContainer"
+                    width="100%"
+                    class="sapUiSmallMarginTop"
+                />
+            </content>
+        </Panel>
+
+        <!-- Daily Wise Temperature Data -->
+
+        <Panel
+            headerText="Daily Wise - Temperature Data"
+            class="whiteCard"
+            expandable="true"
+        >
+            <content>
+                <HBox
+                    width="100%"
+                    alignItems="Center"
+                    justifyContent="Start"
+                    class="sapUiSmallMarginBottom"
+                >
+                    <!-- Find Button -->
+                    <VBox
+                        width="20%"
+                        class="sapUiSmallMarginEnd"
+                    >
+                        <Button
+                            text="Find Temperature Data"
+                            type="Success"
+                            width="100%"
+                            press="onFindPressDailyTemperature"
+                        />
+                    </VBox>
+
+                    <!-- Red Info Label -->
+                    <VBox width="80%">
+                        <tnt:InfoLabel
+                            text="Required fields: Site ID, Runner , From Date, and To Date"
+                            colorScheme="1"
+                        />
+                    </VBox>
+                </HBox>
+
+                <!-- Table / Chart Container -->
+                <VBox
+                    id="temperatureTableContainer"
+                    width="100%"
+                    class="sapUiSmallMarginTop"
+                />
             </content>
         </Panel>
 
