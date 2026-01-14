@@ -43,19 +43,19 @@
 
         <!-- Search Field -->
         <Panel
-            headerText="Search "
+            headerText="Search"
             class="whiteCard"
             expandable="false"
         >
             <content>
+                <!-- Row 1 -->
                 <HBox
                     width="100%"
                     justifyContent="SpaceBetween"
-                    alignItems="End"
-                    wrap="Wrap"
+                    alignItems="Start"
+                    class="sapUiSmallMarginTop"
                 >
-                    <!-- Site ID -->
-                    <VBox width="25%">
+                    <VBox width="30%">
                         <Label
                             text="Site ID"
                             required="true"
@@ -68,7 +68,8 @@
                             valueHelpRequest="onSiteIdValueHelp"
                         />
                     </VBox>
-                    <VBox width="25%">
+
+                    <VBox width="30%">
                         <Label
                             text="Runner"
                             required="true"
@@ -82,8 +83,29 @@
                         />
                     </VBox>
 
-                    <!-- From Date -->
-                    <VBox width="15%">
+                    <VBox width="30%">
+                        <Label
+                            text="Campaign Number"
+                            required="true"
+                        />
+                        <Input
+                            id="CampaignNoId1"
+                            placeholder="Enter Campaign Number"
+                            showValueHelp="true"
+                            liveChange="onCampaignLiveChange"
+                            valueHelpRequest="onCampaignValueHelp"
+                        />
+                    </VBox>
+                </HBox>
+
+                <!-- Row 2 (NO GAP) -->
+                <HBox
+                    width="100%"
+                    justifyContent="Start"
+                    alignItems="Start"
+                    class="sapUiSmallMarginTop gapLarge"
+                >
+                    <VBox width="30%">
                         <Label
                             text="From Date"
                             required="true"
@@ -96,8 +118,7 @@
                         />
                     </VBox>
 
-                    <!-- To Date -->
-                    <VBox width="15%">
+                    <VBox width="30%">
                         <Label
                             text="To Date"
                             required="true"
@@ -109,23 +130,6 @@
                             displayFormat="dd-MM-yyyy"
                         />
                     </VBox>
-
-                    <!-- Find Button -->
-                    <!-- <VBox width="8%">
-                        <Label text=" " />
-                        <Button
-                            text="Find"
-                            type="Emphasized"
-                            width="100%"
-                            press="onFindPressDailyProduction"
-                        />
-                    </VBox> -->
-
-                    <!-- <VBox
-                        id="tableContainer"
-                        width="100%"
-                        class="sapUiSmallMarginTop"
-                    /> -->
                 </HBox>
             </content>
         </Panel>
@@ -214,6 +218,91 @@
                 <!-- Table / Chart Container -->
                 <VBox
                     id="temperatureTableContainer"
+                    width="100%"
+                    class="sapUiSmallMarginTop"
+                />
+            </content>
+        </Panel>
+        <Panel
+            headerText="Life After Major/Minor Repair"
+            class="whiteCard"
+            expandable="true"
+        >
+            <content>
+                <HBox
+                    width="100%"
+                    alignItems="Center"
+                    justifyContent="Start"
+                    class="sapUiSmallMarginBottom"
+                >
+                    <!-- Find Button (Only One) -->
+                    <VBox
+                        width="20%"
+                        class="sapUiSmallMarginEnd"
+                    >
+                        <Button
+                            text="Find  Data"
+                            type="Success"
+                            width="100%"
+                            press="onFindPressLifeAfterMajorMinor"
+                        />
+                    </VBox>
+
+                    <!-- Info Message -->
+                    <VBox width="80%">
+                        <tnt:InfoLabel
+                            text="Required fields: Site ID, Runner, Campaign Number"
+                            colorScheme="1"
+                        />
+                    </VBox>
+                </HBox>
+
+                <!-- Result Container -->
+                <VBox
+                    id="lifeAfterMajorMinorContainer"
+                    width="100%"
+                    class="sapUiSmallMarginTop"
+                />
+            </content>
+        </Panel>
+
+        <Panel
+            headerText="Campaign Wise Production"
+            class="whiteCard"
+            expandable="true"
+        >
+            <content>
+                <HBox
+                    width="100%"
+                    alignItems="Center"
+                    justifyContent="Start"
+                    class="sapUiSmallMarginBottom"
+                >
+                    <!-- Find Button -->
+                    <VBox
+                        width="20%"
+                        class="sapUiSmallMarginEnd"
+                    >
+                        <Button
+                            text="Find Data"
+                            type="Success"
+                            width="100%"
+                            press="onFindPressCampaignwiseProduction"
+                        />
+                    </VBox>
+
+                    <!-- Info Message -->
+                    <VBox width="60%">
+                        <tnt:InfoLabel
+                            text="Required fields: Site ID, Runner, Campaign Number"
+                            colorScheme="1"
+                        />
+                    </VBox>
+                </HBox>
+
+                <!-- Result Container -->
+                <VBox
+                    id="campaignwiseProductionContainer"
                     width="100%"
                     class="sapUiSmallMarginTop"
                 />

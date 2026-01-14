@@ -75,3 +75,6 @@
     border-radius: 10px;
    
 }
+.gapLarge {
+  gap: 52px;   /* increase: 56px / 64px if you want more */
+}
