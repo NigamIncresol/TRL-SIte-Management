@@ -74,7 +74,7 @@ service siteManagementService {
 
     function campaignwiseProduction(site_id: String,
                                     productionLineName: String,
-                                    curr_campaign: String)                   returns array of {
+                                    to_date: Date)                   returns array of {
         date                : Date;
         production          : Integer;
         cumulativeprod      : Integer;

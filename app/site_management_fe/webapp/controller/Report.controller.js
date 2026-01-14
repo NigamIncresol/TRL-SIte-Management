@@ -670,11 +670,11 @@ sap.ui.define([
             });
 
             oDialog.open();
+        },
+        fnFormatDate: function (d) {
+            const istOffset = 5.5 * 60 * 60 * 1000;
+            return new Date(d.getTime() + istOffset).toISOString().split("T")[0];
         }
-
-
-
-
 
         , onFindPressDailyTemperature: function () {
             console.log("=== onFindPressDailyTemperature START ===");
@@ -713,7 +713,7 @@ sap.ui.define([
             oContext.requestObject()
                 .then(function (oResponse) {
                     const aData = oResponse.value || [];
-                     sap.m.MessageToast.show("Temperature Data Loaded!");
+                    sap.m.MessageToast.show("Temperature Data Loaded!");
 
                     if (!aData.length) {
                         sap.m.MessageToast.show("No data found");
@@ -1113,11 +1113,11 @@ sap.ui.define([
             oContext.requestObject()
                 .then(function (oResponse) {
                     const aReportData = oResponse.value || [];
-                     sap.m.MessageToast.show("Life After major/Minor data loaded");
+                    sap.m.MessageToast.show("Life After major/Minor data loaded");
 
                     if (!aReportData.length) {
                         sap.m.MessageToast.show("No data found for selected filters");
-                    
+
                     }
 
                     // ✅ reuse same named model
@@ -1196,46 +1196,68 @@ sap.ui.define([
 
             const sSiteId = this.byId("siteId").getValue();
             const sRunner = this.byId("ProductionLineId1").getValue();
-            const sCampaign = this.byId("CampaignNoId1").getValue();
 
-            if (!sSiteId || !sRunner || !sCampaign) {
+            // 📅 To Date
+            const dToDate = this.byId("toDate").getDateValue();
+
+            if (!sSiteId || !sRunner || !dToDate) {
                 sap.m.MessageToast.show("Please fill all required fields!");
                 return;
             }
 
+            // ===============================
+            // IST date formatter (AS REQUESTED)
+            // ===============================
+            const fnFormatDate = function (d) {
+                const istOffset = 5.5 * 60 * 60 * 1000;
+                return new Date(d.getTime() + istOffset).toISOString().split("T")[0];
+            };
+
+            const sToDate = fnFormatDate(dToDate);
+
+            // ===============================
+            // OData Function Call
+            // ===============================
             const sFunctionPath =
                 `/campaignwiseProduction(` +
                 `site_id='${encodeURIComponent(sSiteId)}',` +
                 `productionLineName='${encodeURIComponent(sRunner)}',` +
-                `curr_campaign='${encodeURIComponent(sCampaign)}'` +
+                `to_date=${sToDate}` +
                 `)`;
 
             const oContext = oODataModel.bindContext(sFunctionPath);
 
+            // ===============================
+            // FETCH DATA
+            // ===============================
             oContext.requestObject()
                 .then(function (oResponse) {
+
                     const aReportData = oResponse.value || [];
-                     sap.m.MessageToast.show("Campain wise production data loaded");
+                    sap.m.MessageToast.show("Campaign wise production data loaded");
 
                     if (!aReportData.length) {
                         sap.m.MessageToast.show("No data found for selected filters");
-                        
                     }
 
-                    // ✅ reuse same named model
+                    // =====================================================
+                    // EVERYTHING BELOW REMAINS SAME AS YOUR ORIGINAL CODE
+                    // =====================================================
+
+                    // reuse same named model
                     let oCampModel = this.getView().getModel("campaignwiseProductionModel");
                     if (!oCampModel) {
                         oCampModel = new sap.ui.model.json.JSONModel({ reportData: [] });
                         this.getView().setModel(oCampModel, "campaignwiseProductionModel");
                     }
 
-                    // ✅ update data + refresh (no UI recreation needed)
+                    // update data + refresh
                     oCampModel.setProperty("/reportData", aReportData);
                     oCampModel.refresh(true);
 
                     const oContainer = this.byId("campaignwiseProductionContainer");
 
-                    // ✅ create table ONLY ONCE
+                    // create table ONLY ONCE
                     let oTable = this.byId("campaignwiseProductionTable");
                     if (!oTable) {
                         oTable = new sap.ui.table.Table(this.createId("campaignwiseProductionTable"), {
@@ -1248,7 +1270,7 @@ sap.ui.define([
                         });
                         oTable.addStyleClass("sapUiLargeMarginTop");
 
-                        // create columns once (based on first response)
+                        // create columns once
                         Object.keys(aReportData[0]).forEach(function (sKey) {
                             const sLabel = sKey
                                 .replace(/_/g, " ")
@@ -1258,7 +1280,9 @@ sap.ui.define([
 
                             oTable.addColumn(new sap.ui.table.Column({
                                 label: new sap.m.Label({ text: sLabel }),
-                                template: new sap.m.Text({ text: `{campaignwiseProductionModel>${sKey}}` }),
+                                template: new sap.m.Text({
+                                    text: `{campaignwiseProductionModel>${sKey}}`
+                                }),
                                 resizable: false
                             }));
                         });
@@ -1266,7 +1290,7 @@ sap.ui.define([
                         oContainer.addItem(oTable);
                     }
 
-                    // ✅ create Export button ONLY ONCE
+                    // create Export button ONLY ONCE
                     let oExportBtn = this.byId("exportCampaignwiseProduction");
                     if (!oExportBtn) {
                         const oButtonBox = new sap.m.HBox({ alignItems: "Center" });
@@ -1289,6 +1313,7 @@ sap.ui.define([
                     sap.m.MessageToast.show("Error fetching data from API");
                 });
         }
+
 
 
 

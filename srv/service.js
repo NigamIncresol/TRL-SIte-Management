@@ -210,7 +210,7 @@ module.exports = cds.service.impl(async function () {
     });
 
     //...............................................................................................................................
-     this.on('getCampaignsBySite', async (req) => {
+    this.on('getCampaignsBySite', async (req) => {
 
         const { site_id, productionLineName } = req.data;
 
@@ -223,7 +223,7 @@ module.exports = cds.service.impl(async function () {
             SELECT.distinct
                 .from(dailyProduction)
                 .columns('curr_campaign')
-                .where({ 
+                .where({
                     site_id,
                     productionLineName
                 })
@@ -234,7 +234,7 @@ module.exports = cds.service.impl(async function () {
     });
 
     //..................................................................................................................................
-     
+
     this.on('lifeAfterMajorMinorRepairProduction', async (req) => {
 
         const { site_id, productionLineName, curr_campaign } = req.data;
@@ -294,15 +294,14 @@ module.exports = cds.service.impl(async function () {
     });
 
     //..................................................................................................................................
-     this.on('campaignwiseProduction', async (req) => {
+    this.on('campaignwiseProduction', async (req) => {
 
-        const { site_id, productionLineName, curr_campaign } = req.data;
+        const { site_id, productionLineName, to_date } = req.data;
 
-        if (!site_id || !productionLineName || !curr_campaign) {
-            req.reject(400, 'site_id, productionLineName, and curr_campaign are required');
+        if (!site_id || !productionLineName || !to_date) {
+            req.reject(400, 'site_id, productionLineName, and to_date are required');
         }
 
-        // Fetch production records ordered by date
         const data = await cds.run(
             SELECT.from(dailyProduction)
                 .columns(
@@ -314,16 +313,23 @@ module.exports = cds.service.impl(async function () {
                 )
                 .where({
                     site_id,
-                    productionLineName,
-                    curr_campaign
+                    productionLineName
                 })
-                .orderBy('production_date')
+                .and({ production_date: { '<=': to_date } })
+                .orderBy('curr_campaign', 'production_date')
         );
 
-        // Continuous cumulative sum (no reset)
         let cumulative = 0;
+        let previousCampaign = null;
 
         const result = data.map(r => {
+
+            // Reset cumulative when campaign changes
+            if (r.curr_campaign !== previousCampaign) {
+                cumulative = 0;
+                previousCampaign = r.curr_campaign;
+            }
+
             cumulative += r.production_data || 0;
 
             return {
@@ -338,5 +344,6 @@ module.exports = cds.service.impl(async function () {
 
         return result;
     });
+
 });
 

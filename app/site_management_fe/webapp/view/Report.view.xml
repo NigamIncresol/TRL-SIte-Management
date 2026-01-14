@@ -181,48 +181,7 @@
 
         <!-- Daily Wise Temperature Data -->
 
-        <Panel
-            headerText="Daily Wise - Temperature Data"
-            class="whiteCard"
-            expandable="true"
-        >
-            <content>
-                <HBox
-                    width="100%"
-                    alignItems="Center"
-                    justifyContent="Start"
-                    class="sapUiSmallMarginBottom"
-                >
-                    <!-- Find Button -->
-                    <VBox
-                        width="20%"
-                        class="sapUiSmallMarginEnd"
-                    >
-                        <Button
-                            text="Find Temperature Data"
-                            type="Success"
-                            width="100%"
-                            press="onFindPressDailyTemperature"
-                        />
-                    </VBox>
-
-                    <!-- Red Info Label -->
-                    <VBox width="80%">
-                        <tnt:InfoLabel
-                            text="Required fields: Site ID, Runner , From Date, and To Date"
-                            colorScheme="1"
-                        />
-                    </VBox>
-                </HBox>
-
-                <!-- Table / Chart Container -->
-                <VBox
-                    id="temperatureTableContainer"
-                    width="100%"
-                    class="sapUiSmallMarginTop"
-                />
-            </content>
-        </Panel>
+    
         <Panel
             headerText="Life After Major/Minor Repair"
             class="whiteCard"
@@ -294,7 +253,7 @@
                     <!-- Info Message -->
                     <VBox width="60%">
                         <tnt:InfoLabel
-                            text="Required fields: Site ID, Runner, Campaign Number"
+                            text="Required fields: Site ID, Runner, To Date/End Date"
                             colorScheme="1"
                         />
                     </VBox>
@@ -303,6 +262,48 @@
                 <!-- Result Container -->
                 <VBox
                     id="campaignwiseProductionContainer"
+                    width="100%"
+                    class="sapUiSmallMarginTop"
+                />
+            </content>
+        </Panel>
+            <Panel
+            headerText="Daily Wise - Temperature Data"
+            class="whiteCard"
+            expandable="true"
+        >
+            <content>
+                <HBox
+                    width="100%"
+                    alignItems="Center"
+                    justifyContent="Start"
+                    class="sapUiSmallMarginBottom"
+                >
+                    <!-- Find Button -->
+                    <VBox
+                        width="20%"
+                        class="sapUiSmallMarginEnd"
+                    >
+                        <Button
+                            text="Find Temperature Data"
+                            type="Success"
+                            width="100%"
+                            press="onFindPressDailyTemperature"
+                        />
+                    </VBox>
+
+                    <!-- Red Info Label -->
+                    <VBox width="80%">
+                        <tnt:InfoLabel
+                            text="Required fields: Site ID, Runner , From Date, and To Date"
+                            colorScheme="1"
+                        />
+                    </VBox>
+                </HBox>
+
+                <!-- Table / Chart Container -->
+                <VBox
+                    id="temperatureTableContainer"
                     width="100%"
                     class="sapUiSmallMarginTop"
                 />
