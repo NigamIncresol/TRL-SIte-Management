@@ -388,38 +388,50 @@ sap.ui.define([
         // --- Render Production Line Helper ---
         renderProductionLine: function (siteData, dailyData) {
             const oView = this.getView();
-            const oViewModel = oView.getModel("view");
             const oLinesContainer = oView.byId("linesContainer");
             oLinesContainer.destroyItems();
 
             const sProdLine = oView.byId("ProductionLineId").getValue().trim();
 
             // Find the production line matching the entered name
-            const oLine = (siteData.productionLines || []).find(line => line.line_name === sProdLine);
+            const oLine = (siteData.productionLines || [])
+                .find(line => line.line_name === sProdLine);
 
             if (!oLine) {
                 sap.m.MessageToast.show("Runner not found");
                 return;
             }
 
-            const bEditable = true; // Customize based on productionStageCompleted if needed
+            const bEditable = true; // Control editability if needed
 
             const oPanel = new sap.m.Panel({
                 headerText: "Runner : " + oLine.line_name,
                 expandable: false,
-                customData: [new sap.ui.core.CustomData({ key: "lineId", value: oLine.ID })],
+                customData: [
+                    new sap.ui.core.CustomData({
+                        key: "lineId",
+                        value: oLine.ID
+                    })
+                ],
                 content: [
                     new sap.ui.layout.Grid({
                         defaultSpan: "L4 M6 S12",
                         hSpacing: 1,
                         vSpacing: 1,
                         content: [
+
+                            // Runner Name
                             new sap.m.VBox({
                                 items: [
                                     new sap.m.Label({ text: "Runner Name" }),
-                                    new sap.m.Input({ value: oLine.line_name, editable: false })
+                                    new sap.m.Input({
+                                        value: oLine.line_name,
+                                        editable: false
+                                    })
                                 ]
                             }),
+
+                            // Production Data
                             new sap.m.VBox({
                                 items: [
                                     new sap.m.Label({ text: "Production Data" }),
@@ -431,6 +443,8 @@ sap.ui.define([
                                     })
                                 ]
                             }),
+
+                            // Erosion Data
                             new sap.m.VBox({
                                 items: [
                                     new sap.m.Label({ text: "Erosion Data" }),
@@ -439,6 +453,17 @@ sap.ui.define([
                                         placeholder: "Enter erosion data",
                                         value: dailyData?.erosion_data || "",
                                         editable: bEditable
+                                    })
+                                ]
+                            }),
+
+                            // Tilt Repair (Switch)
+                            new sap.m.VBox({
+                                items: [
+                                    new sap.m.Label({ text: "Tilt Repair" }),
+                                    new sap.m.Switch({
+                                        state: !!dailyData?.tiltRepair, // false by default
+                                        enabled: bEditable
                                     })
                                 ]
                             })
@@ -450,6 +475,7 @@ sap.ui.define([
             oPanel.addStyleClass("sapUiSmallMarginBottom");
             oLinesContainer.addItem(oPanel);
         }
+
 
 
         ,
@@ -477,16 +503,19 @@ sap.ui.define([
             const erosionData =
                 parseInt(aGrid[2].getItems()[1].getValue(), 10) || 0;
 
+            // 🔹 Tilt Repair (Switch)
+            const tiltRepair =
+                aGrid[3].getItems()[1].getState() === true;
+
             const payload = {
                 production_data: productionData,
                 erosion_data: erosionData,
+                tiltRepair: tiltRepair, // ✅ added
                 remarks: remark,
                 curr_campaign: campInfo?.campaign_no || "",
                 curr_repair_status: campInfo?.repair_status || "",
                 curr_minor_repair_status: campInfo?.minor_repair_status || 0
             };
-
-
 
             if (this._isExistingDailyProduction) {
 
@@ -505,12 +534,10 @@ sap.ui.define([
 
                     const oContext = oContextBinding.getBoundContext();
 
-                    // set each property (PATCH)
                     Object.keys(payload).forEach(key => {
                         oContext.setProperty(key, payload[key]);
                     });
 
-                    // submit PATCH
                     return oODataModel.submitBatch(
                         oContextBinding.getUpdateGroupId()
                     );
@@ -521,9 +548,9 @@ sap.ui.define([
 
                 }).catch(err => {
 
-                    const msg =
-                        err?.message || "Update failed";
-                    sap.m.MessageBox.error(msg);
+                    sap.m.MessageBox.error(
+                        err?.message || "Update failed"
+                    );
                 });
 
             } else {
@@ -548,13 +575,13 @@ sap.ui.define([
 
                 }).catch(err => {
 
-                    const msg =
-                        err?.message || "Create failed";
-                    sap.m.MessageBox.error(msg);
+                    sap.m.MessageBox.error(
+                        err?.message || "Create failed"
+                    );
                 });
             }
-
         }
+
 
         ,
         onSubmit: function () {

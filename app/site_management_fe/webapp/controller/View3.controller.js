@@ -486,9 +486,9 @@ sap.ui.define([
                 }
 
                 (line.sensors || []).forEach(sensor => {
-                    if (sensor.reading === "" || sensor.reading == null) {
-                        return;
-                    }
+                    // if (sensor.reading === "" || sensor.reading == null) {
+                    //     return;
+                    // }
 
                     const payload = {
                         site_id: siteId,

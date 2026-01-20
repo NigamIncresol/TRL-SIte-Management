@@ -73,6 +73,7 @@ entity DailyProduction : managed {
       curr_campaign            : String(50);
       curr_repair_status       : String(20);
       curr_minor_repair_status : Integer;
+      tiltRepair               : Boolean;
 
       production_data          : Integer;
       erosion_data             : Integer;
