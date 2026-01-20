@@ -816,6 +816,11 @@ sap.ui.define([
                 const oLifeModel = this.getView().getModel("lifeAfterMajorMinorModel");
                 aData = oLifeModel?.getProperty("/reportData");
             }
+            if (sReportType === "TILT_REPAIR_PRODUCTION") {
+                const oTiltModel = this.getView().getModel("tiltRepairProductionModel");
+                aData = oTiltModel?.getProperty("/reportData");
+            }
+
             else if (sReportType === "CAMPAIGNWISE_PRODUCTION") {
                 const oCampModel = this.getView().getModel("campaignwiseProductionModel");
                 aData = oCampModel?.getProperty("/reportData");   // keep same path style
@@ -1301,6 +1306,127 @@ sap.ui.define([
                             type: "Success",
                             icon: "sap-icon://excel-attachment",
                             press: this.onExportExcel.bind(this, "CAMPAIGNWISE_PRODUCTION")
+                        });
+
+                        oButtonBox.addItem(oExportBtn);
+                        oContainer.addItem(oButtonBox);
+                    }
+
+                }.bind(this))
+                .catch(function (err) {
+                    console.error("API Error:", err);
+                    sap.m.MessageToast.show("Error fetching data from API");
+                });
+        }
+        ,
+        onFindPressTiltRepairProduction: function () {
+            console.log("=== onFindPressTiltRepairProduction START ===");
+
+            const oODataModel = this.getOwnerComponent().getModel();
+
+            const sSiteId = this.byId("siteId").getValue();
+            const sRunner = this.byId("ProductionLineId1").getValue();
+
+            // 📅 To Date
+            const dToDate = this.byId("toDate").getDateValue();
+
+            if (!sSiteId || !sRunner || !dToDate) {
+                sap.m.MessageToast.show("Please fill all required fields!");
+                return;
+            }
+
+            // ===============================
+            // IST date formatter
+            // ===============================
+            const fnFormatDate = function (d) {
+                const istOffset = 5.5 * 60 * 60 * 1000;
+                return new Date(d.getTime() + istOffset).toISOString().split("T")[0];
+            };
+
+            const sToDate = fnFormatDate(dToDate);
+
+            // ===============================
+            // OData Function Call
+            // ===============================
+            const sFunctionPath =
+                `/tiltRepairProduction(` +
+                `site_id='${encodeURIComponent(sSiteId)}',` +
+                `productionLineName='${encodeURIComponent(sRunner)}',` +
+                `to_date=${sToDate}` +
+                `)`;
+
+            const oContext = oODataModel.bindContext(sFunctionPath);
+
+            // ===============================
+            // FETCH DATA
+            // ===============================
+            oContext.requestObject()
+                .then(function (oResponse) {
+
+                    const aReportData = oResponse.value || [];
+                    sap.m.MessageToast.show("Tilt repair production data loaded");
+
+                    if (!aReportData.length) {
+                        sap.m.MessageToast.show("No data found for selected filters");
+                    }
+
+                    // reuse same named model
+                    let oTiltModel = this.getView().getModel("tiltRepairProductionModel");
+                    if (!oTiltModel) {
+                        oTiltModel = new sap.ui.model.json.JSONModel({ reportData: [] });
+                        this.getView().setModel(oTiltModel, "tiltRepairProductionModel");
+                    }
+
+                    // update data + refresh
+                    oTiltModel.setProperty("/reportData", aReportData);
+                    oTiltModel.refresh(true);
+
+                    const oContainer = this.byId("tiltRepairProductionContainer");
+
+                    // create table ONLY ONCE
+                    let oTable = this.byId("tiltRepairProductionTable");
+                    if (!oTable && aReportData.length) {
+                        oTable = new sap.ui.table.Table(this.createId("tiltRepairProductionTable"), {
+                            rows: "{tiltRepairProductionModel>/reportData}",
+                            visibleRowCount: 10,
+                            selectionMode: "None",
+                            width: "100%",
+                            enableColumnReordering: true,
+                            enableColumnResize: false
+                        });
+                        oTable.addStyleClass("sapUiLargeMarginTop");
+
+                        // create columns dynamically
+                        Object.keys(aReportData[0]).forEach(function (sKey) {
+                            const sLabel = sKey
+                                .replace(/_/g, " ")
+                                .replace(/([a-z])([A-Z])/g, "$1 $2")
+                                .replace(/[^a-zA-Z0-9 ]/g, "")
+                                .toUpperCase();
+
+                            oTable.addColumn(new sap.ui.table.Column({
+                                label: new sap.m.Label({ text: sLabel }),
+                                template: new sap.m.Text({
+                                    text: `{tiltRepairProductionModel>${sKey}}`
+                                }),
+                                resizable: false
+                            }));
+                        });
+
+                        oContainer.addItem(oTable);
+                    }
+
+                    // create Export button ONLY ONCE
+                    let oExportBtn = this.byId("exportTiltRepairProduction");
+                    if (!oExportBtn) {
+                        const oButtonBox = new sap.m.HBox({ alignItems: "Center" });
+                        oButtonBox.addStyleClass("sapUiSmallMarginTop");
+
+                        oExportBtn = new sap.m.Button(this.createId("exportTiltRepairProduction"), {
+                            text: "Export Data",
+                            type: "Success",
+                            icon: "sap-icon://excel-attachment",
+                            press: this.onExportExcel.bind(this, "TILT_REPAIR_PRODUCTION")
                         });
 
                         oButtonBox.addItem(oExportBtn);

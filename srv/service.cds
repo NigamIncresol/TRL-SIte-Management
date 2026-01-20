@@ -74,7 +74,7 @@ service siteManagementService {
 
     function campaignwiseProduction(site_id: String,
                                     productionLineName: String,
-                                    to_date: Date)                   returns array of {
+                                    to_date: Date)                           returns array of {
         date                : Date;
         production          : Integer;
         cumulativeprod      : Integer;
@@ -82,5 +82,15 @@ service siteManagementService {
         repair_status       : String;
         minor_repair_status : Integer;
     };
+
+    function tiltRepairProduction(site_id: String,
+                                  productionLineName: String,
+                                  to_date: Date)                             returns array of {
+        date           : Date;
+        production     : Integer;
+        cumulativeprod : Integer;
+        remarks        : String;
+    };
+
 
 }

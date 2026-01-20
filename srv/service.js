@@ -344,6 +344,52 @@ module.exports = cds.service.impl(async function () {
 
         return result;
     });
+    //...............................................................................................................................
+    this.on('tiltRepairProduction', async (req) => {
+
+        const { site_id, productionLineName, to_date } = req.data;
+
+        if (!site_id || !productionLineName || !to_date) {
+            req.reject(400, 'site_id, productionLineName, and to_date are required');
+        }
+
+        const data = await cds.run(
+            SELECT.from(dailyProduction)
+                .columns(
+                    'production_date',
+                    'production_data',
+                    'tiltRepair',
+                    'remarks' // <-- assuming remarks column exists
+                )
+                .where({
+                    site_id,
+                    productionLineName
+                })
+                .and({ production_date: { '<=': to_date } })
+                .orderBy('production_date')
+        );
+
+        let cumulative = 0;
+
+        const result = data.map(r => {
+
+            // Reset cumulative when tilt repair starts
+            if (r.tiltRepair === true) {
+                cumulative = 0;
+            }
+
+            cumulative += r.production_data || 0;
+
+            return {
+                date: r.production_date,
+                production: r.production_data || 0,
+                cumulativeprod: cumulative,
+                remarks: r.remarks || ''
+            };
+        });
+
+        return result;
+    });
 
 });
 

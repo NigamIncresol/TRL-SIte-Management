@@ -5,6 +5,7 @@
     xmlns:layout="sap.ui.layout"
     xmlns:core="sap.ui.core"
     xmlns:tnt="sap.tnt"
+    xmlns:l="sap.ui.layout"
 >
     <Page
         showHeader="true"
@@ -48,14 +49,14 @@
             expandable="false"
         >
             <content>
-                <!-- Row 1 -->
-                <HBox
+                <l:Grid
+                    defaultSpan="L4 M6 S12"
+                    hSpacing="2"
+                    vSpacing="1"
                     width="100%"
-                    justifyContent="SpaceBetween"
-                    alignItems="Start"
-                    class="sapUiSmallMarginTop"
                 >
-                    <VBox width="30%">
+                    <!-- Row 1 -->
+                    <VBox>
                         <Label
                             text="Site ID"
                             required="true"
@@ -69,7 +70,7 @@
                         />
                     </VBox>
 
-                    <VBox width="30%">
+                    <VBox>
                         <Label
                             text="Runner"
                             required="true"
@@ -83,7 +84,7 @@
                         />
                     </VBox>
 
-                    <VBox width="30%">
+                    <VBox>
                         <Label
                             text="Campaign Number"
                             required="true"
@@ -96,16 +97,9 @@
                             valueHelpRequest="onCampaignValueHelp"
                         />
                     </VBox>
-                </HBox>
 
-                <!-- Row 2 (NO GAP) -->
-                <HBox
-                    width="100%"
-                    justifyContent="Start"
-                    alignItems="Start"
-                    class="sapUiSmallMarginTop gapLarge"
-                >
-                    <VBox width="30%">
+                    <!-- Row 2 -->
+                    <VBox>
                         <Label
                             text="From Date"
                             required="true"
@@ -118,7 +112,7 @@
                         />
                     </VBox>
 
-                    <VBox width="30%">
+                    <VBox>
                         <Label
                             text="To Date"
                             required="true"
@@ -130,7 +124,7 @@
                             displayFormat="dd-MM-yyyy"
                         />
                     </VBox>
-                </HBox>
+                </l:Grid>
             </content>
         </Panel>
 
@@ -181,7 +175,6 @@
 
         <!-- Daily Wise Temperature Data -->
 
-    
         <Panel
             headerText="Life After Major/Minor Repair"
             class="whiteCard"
@@ -267,7 +260,49 @@
                 />
             </content>
         </Panel>
-            <Panel
+        <Panel
+            headerText="Tilt Repair (TR) Production"
+            class="whiteCard"
+            expandable="true"
+        >
+            <content>
+                <HBox
+                    width="100%"
+                    alignItems="Center"
+                    justifyContent="Start"
+                    class="sapUiSmallMarginBottom"
+                >
+                    <!-- Find Button -->
+                    <VBox
+                        width="20%"
+                        class="sapUiSmallMarginEnd"
+                    >
+                        <Button
+                            text="Find Data"
+                            type="Success"
+                            width="100%"
+                            press="onFindPressTiltRepairProduction"
+                        />
+                    </VBox>
+
+                    <!-- Info Message -->
+                    <VBox width="60%">
+                        <tnt:InfoLabel
+                            text="Required fields: Site ID, Runner, To Date/End Date"
+                            colorScheme="1"
+                        />
+                    </VBox>
+                </HBox>
+
+                <!-- Result Container -->
+                <VBox
+                    id="tiltRepairProductionContainer"
+                    width="100%"
+                    class="sapUiSmallMarginTop"
+                />
+            </content>
+        </Panel>
+        <Panel
             headerText="Daily Wise - Temperature Data"
             class="whiteCard"
             expandable="true"

@@ -214,3 +214,7 @@ Accept: application/json
 ###
 GET http://localhost:4004/odata/v4/site-management/campaignwiseProduction(site_id='SITE-JINDAL-PUNE-NIGAM',productionLineName='EAST',curr_campaign='CAMP-JINDAL-PUNE-NIGAM-EAST-002')
 Accept: application/json
+
+###
+GET http://localhost:4004/odata/v4/site-management/tiltRepairProduction(site_id='SITE-DOLVI-BANGALORE-BLAST',productionLineName='East',to_date=2026-12-31)
+Accept: application/json
