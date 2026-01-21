@@ -69,7 +69,7 @@
                 </TileContent>
             </GenericTile>
             
-            <!-- TILE 4: Inventory -->
+         
             <GenericTile
                 header="Inventory IN"
                 press=".oninventoryPress"
@@ -83,7 +83,7 @@
                     />
                 </TileContent>
             </GenericTile>
-               <!-- TILE 5: Consumption -->
+               
              <GenericTile
                 header="consumption"
                 press=".onconsumptionPress"

@@ -38,8 +38,6 @@
             press=".onNavToHome"
         />
 
-
-
         <Panel
             headerText="Search"
             class="whiteCard"
@@ -221,6 +219,7 @@
                         <Button
                             text="Add Row"
                             icon="sap-icon://add"
+                            type="Reject"
                             press=".onAddMaterialRow"
                         />
                     </Toolbar>
@@ -257,7 +256,8 @@
                         <cells>
                             <Input
                                 value="{formData>material}"
-                                placeholder="Enter Material"
+                                showValueHelp="true"
+                                valueHelpRequest=".onMaterialValueHelp"
                             />
 
                             <Input
@@ -277,7 +277,7 @@
 
                             <Button
                                 icon="sap-icon://delete"
-                                type="Transparent"
+                                type="Negative"
                                 press=".onDeleteMaterialRow"
                             />
                         </cells>

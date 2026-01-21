@@ -73,7 +73,7 @@
                             text="Find"
                             type="Emphasized"
                             width="100%"
-                            press="onFindPress"
+                            press="onFindSitePress"
                         />
                     </VBox>
 
@@ -136,6 +136,7 @@
                         <Button
                             text="Add Row"
                             icon="sap-icon://add"
+                            type="Reject"
                             press=".onAddMaterialRow"
                         />
                     </Toolbar>
@@ -173,7 +174,8 @@
                         <cells>
                             <Input
                                 value="{formData>material}"
-                                placeholder="Enter Material"
+                                showValueHelp="true"
+                                valueHelpRequest=".onMaterialValueHelp"
                             />
                             <Input
                                 value="{formData>materialDesc}"
@@ -190,7 +192,7 @@
 
                             <Button
                                 icon="sap-icon://delete"
-                                type="Transparent"
+                                type="Negative"
                                 press=".onDeleteMaterialRow"
                             />
                         </cells>

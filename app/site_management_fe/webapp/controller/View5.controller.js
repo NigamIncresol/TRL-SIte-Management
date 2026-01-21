@@ -117,7 +117,6 @@ sap.ui.define([
 
             // Set value
             oInput.setValue(sSiteId);
-            this.byId("ProductionLineId1").setValue(""); //resetting runner
 
             this._oSiteVHDialog.close();
         },
@@ -179,6 +178,7 @@ sap.ui.define([
 
                 // store whole response for future use
                 this.siteMasterCompleteData = res;
+                console.log("Sitemaster full data", this.siteMasterCompleteData);
 
                 const aProds = res.productionLines || [];
 
@@ -289,6 +289,197 @@ sap.ui.define([
             oPanel.addStyleClass("sapUiSmallMarginBottom");
             oLinesContainer.addItem(oPanel);
         },
+        onFindPress: function () {
+            const oView = this.getView();
+            const oFormModel = oView.getModel("formData");
+            const oODataModel = oView.getModel(); // default OData V4 model
+
+            const siteId = oView.byId("siteId").getValue().trim();
+            const prodLine = oView.byId("ProductionLineId1").getValue().trim();
+            const sDate = oView.byId("siteDate1").getValue().trim();
+            const sShift = oView.byId("shiftSelect").getSelectedKey() || "A";
+
+            if (!siteId || !prodLine || !sDate) {
+                sap.m.MessageToast.show("Please fill all required fields.");
+                return;
+            }
+
+            // Reset data
+            oFormModel.setProperty("/siteMaster", {});
+            oFormModel.setProperty("/campinfo", {});
+
+            // Set Site Master details (already loaded)
+            if (this.siteMasterCompleteData) {
+                oFormModel.setProperty("/siteMaster", {
+                    customer_name: this.siteMasterCompleteData.customer_name || "",
+                    location: this.siteMasterCompleteData.location || "",
+                    runner_id: this.siteMasterCompleteData.runner_id || ""
+                });
+            }
+
+            // Build OData V4 filters for Consumption
+            const aFilters = [
+                new sap.ui.model.Filter("site_id", "EQ", siteId),
+                new sap.ui.model.Filter("productionLineName", "EQ", prodLine),
+                new sap.ui.model.Filter("consumption_date", "EQ", sDate),
+                new sap.ui.model.Filter("shift_code", "EQ", sShift)
+            ];
+
+            // Bind Consumption entity
+            const oListBinding = oODataModel.bindList(
+                "/consumption",
+                null,
+                null,
+                aFilters
+            );
+
+            oListBinding.requestContexts().then(aContexts => {
+
+                if (aContexts.length > 0) {
+                    const aConsumptions = aContexts.map(oCtx => oCtx.getObject());
+
+                    this._isExistingConsumptionData = true;
+
+                    sap.m.MessageToast.show(
+                        "Existing consumption data found for the selected line/shift/date"
+                    );
+
+                    const oFirstRecord = aConsumptions[0];
+
+                    // Bind Campaign Information
+                    oFormModel.setProperty("/campinfo", {
+                        campaign_no: oFirstRecord.curr_campaign || "",
+                        repair_status: oFirstRecord.curr_repair_status || "",
+                        minor_repair_status: oFirstRecord.curr_minor_repair_status || 0
+                    });
+
+                } else {
+                    // No Consumption Found
+                    sap.m.MessageToast.show(
+                        "No consumption data found for the selected line/shift/date"
+                    );
+
+                    const oMatchedLine =
+                        this.siteMasterCompleteData?.productionLines.find(
+                            line => line.line_name === prodLine
+                        );
+
+                    oFormModel.setProperty("/campinfo", {
+                        campaign_no: oMatchedLine?.curr_campaign || "",
+                        repair_status: oMatchedLine?.curr_repair_status || "",
+                        minor_repair_status: oMatchedLine?.curr_minor_repair_status || 0
+                    });
+
+                    this._isExistingConsumptionData = false;
+                }
+
+            }).catch(err => {
+
+                sap.m.MessageToast.show(
+                    err?.message || "Error while fetching consumption data"
+                );
+
+                const oMatchedLine =
+                    this.siteMasterCompleteData?.productionLines.find(
+                        line => line.line_name === prodLine
+                    );
+
+                oFormModel.setProperty("/campinfo", {
+                    campaign_no: oMatchedLine?.curr_campaign || "",
+                    repair_status: oMatchedLine?.curr_repair_status || "",
+                    minor_repair_status: oMatchedLine?.curr_minor_repair_status || 0
+                });
+            });
+        }
+        ,
+        onMaterialValueHelp: function (oEvent) {
+            const oView = this.getView();
+            const oInput = oEvent.getSource();     // Clicked material input
+            this._oMaterialInput = oInput;
+
+            // Get Site ID
+            const sSiteId = oView.byId("siteId").getValue().trim();
+
+            // Create dialog only once
+            if (!this._oMaterialVHDialog) {
+                this._oMaterialVHDialog = new sap.m.SelectDialog({
+                    title: "Select Material",
+
+                    liveChange: (oEvent) => {
+                        const sValue = oEvent.getParameter("value");
+                        const oFilter = new sap.ui.model.Filter(
+                            "material",
+                            sap.ui.model.FilterOperator.Contains,
+                            sValue
+                        );
+                        oEvent.getSource().getBinding("items").filter([oFilter]);
+                    },
+
+                    confirm: (oEvent) => {
+                        const oItem = oEvent.getParameter("selectedItem");
+                        if (!oItem) return;
+
+                        const oMat = oItem.getBindingContext().getObject();
+                        const oRowCtx = this._oMaterialInput.getBindingContext("formData");
+
+                        // ✅ ONLY material fields (NO quantity)
+                        oRowCtx.setProperty("material", oMat.material);
+                        // oRowCtx.setProperty("materialDesc", oMat.materialDescription);
+
+                        this._oMaterialVHDialog.close();
+                    },
+
+                    cancel: (oEvent) => {
+                        oEvent.getSource().close();
+                    },
+
+                    items: {
+                        path: "/materialsVH",
+                        template: new sap.m.StandardListItem({
+                            title: "{material}",
+                            description: "{materialDescription}"
+                        })
+                    }
+                });
+
+                oView.addDependent(this._oMaterialVHDialog);
+            }
+
+            // ===== Fetch ONLY material data (quantity ignored) =====
+            const oODataModel = this.getOwnerComponent().getModel();
+            const oListBinding = oODataModel.bindList(
+                "/inventory",
+                null,
+                null,
+                [new sap.ui.model.Filter("siteId", sap.ui.model.FilterOperator.EQ, sSiteId)]
+            );
+
+            oListBinding.requestContexts()
+                .then((aContexts) => {
+                    // ✅ Explicitly map only material fields
+                    const aMaterials = aContexts.map(oCtx => {
+                        const oObj = oCtx.getObject();
+                        return {
+                            material: oObj.material,
+                            materialDescription: oObj.materialDescription
+                        };
+                    });
+
+                    const oVHModel = new sap.ui.model.json.JSONModel({
+                        materialsVH: aMaterials
+                    });
+
+                    this._oMaterialVHDialog.setModel(oVHModel);
+                    this._oMaterialVHDialog.open();
+                })
+                .catch((err) => {
+                    sap.m.MessageToast.show("Failed to load Materials");
+                    console.error(err);
+                });
+        },
+
+
+
         onAddMaterialRow: function () {
             const oModel = this.getView().getModel("formData");
 
