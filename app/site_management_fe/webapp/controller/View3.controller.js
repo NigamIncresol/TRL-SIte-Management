@@ -153,6 +153,8 @@ sap.ui.define([
             // Set value
             oInput.setValue(sSiteId);
 
+            this.byId("ProductionLineId1").setValue(""); //resetting runner
+
             this._oSiteVHDialog.close();
         },
         onProdLineValueHelp: function () {

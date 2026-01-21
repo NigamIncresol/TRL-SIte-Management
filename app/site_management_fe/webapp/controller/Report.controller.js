@@ -122,6 +122,8 @@ sap.ui.define([
             if (!oItem) return;
 
             this.byId("siteId").setValue(oItem.getTitle());
+            this.byId("ProductionLineId1").setValue(""); //resetting runner
+            this.byId("CampaignNoId1").setValue("");//resetting campaign
             this._oSiteVHDialog.close();
         },
 
