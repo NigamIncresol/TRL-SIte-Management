@@ -35,8 +35,9 @@
 }
 /* Page Background Color */
 .sitePageBackground {
-    background-color: #eefcff !important;
+    background: linear-gradient(to bottom, #eefcff, #bfefff) !important;
 }
+
 
 /* For full content area */
 .sitePageBackground .sapMPageSubHeader,
@@ -45,7 +46,7 @@
 }
 /* Panel Card Shadow Effect */
 .whiteCard {
-    background: #ffffff !important;
+    background: linear-gradient(to bottom, #fdfefe, #e6f4ff);
     border-radius: 12px !important;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
     margin: 12px 6px !important;
@@ -77,4 +78,7 @@
 }
 .gapLarge {
   gap: 52px;   /* increase: 56px / 64px if you want more */
+}
+.tile {
+    background: linear-gradient(to bottom, #ffffff, #f4fbff);
 }

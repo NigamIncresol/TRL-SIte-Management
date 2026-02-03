@@ -25,7 +25,7 @@
                         justifyContent="Center"
                     >
                         <Text
-                            text="Inventory IN"
+                            text="INVENTORY IN"
                             class="siteHeaderTitle"
                         />
                     </HBox>

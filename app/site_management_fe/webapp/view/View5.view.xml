@@ -25,7 +25,7 @@
                         justifyContent="Center"
                     >
                         <Text
-                            text="Consumption"
+                            text="CONSUMPTION"
                             class="siteHeaderTitle"
                         />
                     </HBox>
@@ -230,7 +230,9 @@
                     <Column>
                         <Text text="Material" />
                     </Column>
-
+                    <Column>
+                        <Text text="Mat. Desc." />
+                    </Column>
                     <Column>
                         <Text text="Quantity" />
                     </Column>
@@ -259,9 +261,12 @@
                                 showValueHelp="true"
                                 valueHelpRequest=".onMaterialValueHelp"
                             />
+                            <Input
+                                value="{formData>materialDescription}"
+                            />
 
                             <Input
-                                value="{formData>materialDesc}"
+                                value="{formData>quantity}"
                                 placeholder="Enter Quantity"
                             />
 

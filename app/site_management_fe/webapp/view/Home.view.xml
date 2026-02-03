@@ -5,7 +5,7 @@
     controllerName="com.trl.sitemanagementfe.controller.Home"
     displayBlock="true"
 >
-    <Page showHeader="true">
+    <Page showHeader="true" class="sitePageBackground">
      <!-- ========== HEADER ========== -->
         <customHeader>
             <Bar class="headerBarFix">
@@ -21,14 +21,15 @@
         </customHeader>
         <!-- Tiles Row -->
         <HBox
-            justifyContent="Start"
+            justifyContent="Center"
             class="sapUiSmallMargin"
+            
         >
             <!-- TILE 1: Configuration -->
             <GenericTile
                 header="Site Configuration"
                 press=".onConfigurationPress"
-                class="sapUiTinyMargin card-tile"
+                class="sapUiTinyMargin card-tile tile"
             >
                 <TileContent>
                     <core:Icon
@@ -43,7 +44,7 @@
             <GenericTile
                 header="Production"
                 press=".onProductionPress"
-                class="sapUiTinyMargin card-tile"
+                class="sapUiTinyMargin card-tile tile"
             >
                 <TileContent>
                     <core:Icon
@@ -58,7 +59,7 @@
             <GenericTile
                 header="Temperature"
                 press=".onTemperaturePress"
-                class="sapUiTinyMargin card-tile"
+                class="sapUiTinyMargin card-tile tile"
             >
                 <TileContent>
                     <core:Icon
@@ -73,7 +74,7 @@
             <GenericTile
                 header="Inventory IN"
                 press=".oninventoryPress"
-                class="sapUiTinyMargin card-tile"
+                class="sapUiTinyMargin card-tile tile"
             >
                 <TileContent>
                     <core:Icon
@@ -87,7 +88,7 @@
              <GenericTile
                 header="consumption"
                 press=".onconsumptionPress"
-                class="sapUiTinyMargin card-tile"
+                class="sapUiTinyMargin card-tile tile"
             >
                 <TileContent>
                     <core:Icon
@@ -100,7 +101,7 @@
              <GenericTile
                 header="Report"
                 press=".onReportPress"
-                class="sapUiTinyMargin card-tile"
+                class="sapUiTinyMargin card-tile tile"
             >
                 <TileContent>
                     <core:Icon

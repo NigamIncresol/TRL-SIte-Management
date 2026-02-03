@@ -237,61 +237,69 @@ module.exports = cds.service.impl(async function () {
 
     this.on('lifeAfterMajorMinorRepairProduction', async (req) => {
 
-        const { site_id, productionLineName, curr_campaign } = req.data;
+    const { site_id, productionLineName, curr_campaign } = req.data;
 
-        if (!site_id || !productionLineName || !curr_campaign) {
-            req.reject(400, 'site_id, productionLineName, and curr_campaign are required');
+    if (!site_id || !productionLineName || !curr_campaign) {
+        req.reject(400, 'site_id, productionLineName, and curr_campaign are required');
+    }
+
+    const data = await cds.run(
+        SELECT.from(dailyProduction)
+            .columns(
+                'production_date',
+                'production_data',
+                'curr_campaign',
+                'curr_repair_status',
+                'curr_minor_repair_status'
+            )
+            .where({
+                site_id,
+                productionLineName,
+                curr_campaign
+            })
+            .orderBy('production_date')
+    );
+
+    let lifeAfterCumulative = 0;   // resets on minor repair status change
+    let simpleCumulative = 0;      // never resets
+    let prevMinorRepairStatus = null;
+
+    const result = data.map(r => {
+        const production = r.production_data || 0;
+        const repairStatus = (r.curr_repair_status || '').toLowerCase();
+
+        // ---- LifeAfter cumulative logic ----
+        if (repairStatus === 'minor') {
+            if (
+                prevMinorRepairStatus !== null &&
+                r.curr_minor_repair_status !== prevMinorRepairStatus
+            ) {
+                lifeAfterCumulative = 0; // reset only this counter
+            }
+            prevMinorRepairStatus = r.curr_minor_repair_status;
+        } else {
+            prevMinorRepairStatus = null;
         }
 
-        // Fetch production records ordered by date
-        const data = await cds.run(
-            SELECT.from(dailyProduction)
-                .columns(
-                    'production_date',
-                    'production_data',
-                    'curr_campaign',
-                    'curr_repair_status',
-                    'curr_minor_repair_status'
-                )
-                .where({
-                    site_id,
-                    productionLineName,
-                    curr_campaign
-                })
-                .orderBy('production_date')
-        );
+        lifeAfterCumulative += production;
 
-        // Compute cumulative production with reset on minor repair status change
-        let cumulative = 0;
-        let prevMinorRepairStatus = null;
+        // ---- Simple cumulative logic ----
+        simpleCumulative += production;
 
-        const result = data.map(r => {
-            const repairStatus = (r.curr_repair_status || '').toLowerCase();
-
-            if (repairStatus === 'minor') {
-                // Reset cumulative if minor repair status changes
-                if (prevMinorRepairStatus !== null && r.curr_minor_repair_status !== prevMinorRepairStatus) {
-                    cumulative = 0; // reset cumulative
-                }
-                prevMinorRepairStatus = r.curr_minor_repair_status;
-            } else {
-                prevMinorRepairStatus = null; // stop tracking if not minor
-            }
-
-            cumulative += r.production_data || 0;
-
-            return {
-                date: r.production_date,
-                production: r.production_data || 0,
-                cumulativeprod: cumulative,
-                campaign: r.curr_campaign,
-                repair_status: r.curr_repair_status,
-                minor_repair_status: r.curr_minor_repair_status
-            };
-        });
-
-        return result;
+        return {
+            date: r.production_date,
+            production,
+            LifeAfterCumulativeProduction: lifeAfterCumulative,
+            CumulativeProduction: simpleCumulative,
+            campaign: r.curr_campaign,
+            repair_status: r.curr_repair_status,
+            minor_repair_status: r.curr_minor_repair_status
+        };
     });
+
+    return result;
+});
+
 
     //..................................................................................................................................
     this.on('campaignwiseProduction', async (req) => {

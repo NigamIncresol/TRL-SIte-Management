@@ -117,6 +117,7 @@ sap.ui.define([
 
             // Set value
             oInput.setValue(sSiteId);
+            this.byId("ProductionLineId1").setValue("");//resetting runner
 
             this._oSiteVHDialog.close();
         },
@@ -337,6 +338,7 @@ sap.ui.define([
 
                 if (aContexts.length > 0) {
                     const aConsumptions = aContexts.map(oCtx => oCtx.getObject());
+                    console.table("Received consumption data", aConsumptions);
 
                     this._isExistingConsumptionData = true;
 
@@ -353,12 +355,23 @@ sap.ui.define([
                         minor_repair_status: oFirstRecord.curr_minor_repair_status || 0
                     });
 
+                    // ===== Bind Materials Table =====
+                    const aMaterials = aConsumptions.map(oItem => ({
+                        material: oItem.material,
+                        materialDescription: oItem.materialDescription,
+                        quantity: oItem.quantity,
+                        batch: oItem.batch,
+                        remarks: oItem.remarks
+                    }));
+
+                    oFormModel.setProperty("/materials", aMaterials);
+
                 } else {
                     // No Consumption Found
                     sap.m.MessageToast.show(
                         "No consumption data found for the selected line/shift/date"
                     );
-
+                    oFormModel.setProperty("/materials", []);
                     const oMatchedLine =
                         this.siteMasterCompleteData?.productionLines.find(
                             line => line.line_name === prodLine
@@ -424,7 +437,7 @@ sap.ui.define([
 
                         // ✅ ONLY material fields (NO quantity)
                         oRowCtx.setProperty("material", oMat.material);
-                        // oRowCtx.setProperty("materialDesc", oMat.materialDescription);
+                        oRowCtx.setProperty("materialDescription", oMat.materialDescription);
 
                         this._oMaterialVHDialog.close();
                     },
@@ -436,10 +449,13 @@ sap.ui.define([
                     items: {
                         path: "/materialsVH",
                         template: new sap.m.StandardListItem({
-                            title: "{material}",
-                            description: "{materialDescription}"
+                            title: "Mat. Code: {material}",
+                            description: "{materialDescription}",
+                            info: "Avl. Qty: {quantity}"
                         })
                     }
+
+
                 });
 
                 oView.addDependent(this._oMaterialVHDialog);
@@ -459,9 +475,11 @@ sap.ui.define([
                     // ✅ Explicitly map only material fields
                     const aMaterials = aContexts.map(oCtx => {
                         const oObj = oCtx.getObject();
+                        console.log("Received inventory material", oObj);
                         return {
                             material: oObj.material,
-                            materialDescription: oObj.materialDescription
+                            materialDescription: oObj.materialDescription,
+                            quantity: oObj.quantity
                         };
                     });
 
@@ -528,6 +546,75 @@ sap.ui.define([
 
             // Update model
             oModel.setProperty("/materials", aMaterials);
+        }
+        ,
+        onSave: function () {
+            const oView = this.getView();
+            const oFormModel = oView.getModel("formData");
+
+            const sSiteId = oView.byId("siteId").getValue().trim();
+            const sRunner = oView.byId("ProductionLineId1").getValue().trim();
+            const sShift = oView.byId("shiftSelect").getSelectedKey();
+            const oDate = oView.byId("siteDate1").getDateValue();
+
+            if (!sSiteId || !sRunner || !sShift || !oDate) {
+                sap.m.MessageToast.show("Please fill all mandatory fields");
+                return;
+            }
+
+            const sConsumptionDate = oDate.toISOString().split("T")[0]; // yyyy-MM-dd
+            const aMaterials = oFormModel.getProperty("/materials") || [];
+
+            if (aMaterials.length === 0) {
+                sap.m.MessageToast.show("Please add at least one material");
+                return;
+            }
+
+            // ================= BUILD PAYLOAD =================
+            const aPayload = [];
+
+            aMaterials.forEach(oItem => {
+
+                if (!oItem.material) {
+                    return;
+                }
+
+                aPayload.push({
+                    site_id: sSiteId,
+                    productionLineName: sRunner,
+                    consumption_date: sConsumptionDate,
+                    shift_code: sShift,
+                    material: oItem.material,
+                    materialDescription: oItem.materialDescription || "",
+                    quantity: Number(oItem.quantity) || 0,
+                    batch: oItem.batch || "",
+                    remarks: oItem.remarks || "",
+                    curr_campaign: oFormModel.getProperty("/campinfo/campaign_no"),
+                    curr_repair_status: oFormModel.getProperty("/campinfo/repair_status"),
+                    curr_minor_repair_status: oFormModel.getProperty("/campinfo/minor_repair_status")
+                });
+            });
+
+            // ================= CONSOLE LOG =================
+            console.log("Consumption Payload (to be saved):", aPayload);
+            console.table(aPayload);
+
+            // ================= SAVE TO DB =================
+            const oListBinding = oODataModel.bindList("/consumption");
+            const sGroupId = oListBinding.getUpdateGroupId();
+
+            aPayload.forEach(oEntry => {
+                oListBinding.create(oEntry);
+            });
+
+            oODataModel.submitBatch(sGroupId)
+                .then(() => {
+                    sap.m.MessageToast.show("Consumption saved successfully");
+                })
+                .catch(err => {
+                    console.error(err);
+                    sap.m.MessageBox.error(err?.message || "Save failed");
+                });
         }
         ,
 

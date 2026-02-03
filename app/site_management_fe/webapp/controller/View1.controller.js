@@ -886,20 +886,50 @@ sap.ui.define([
                     type: "Reject",
                     visible: true,
                     press: () => {
-                        sap.m.MessageBox.confirm("Are you sure you want to stop the campaign?", {
-                            onClose: sAction => {
-                                if (sAction === sap.m.MessageBox.Action.OK) {
-                                    oModel.setProperty(`/lines/${index}/campaign/campaign_no`, "");
-                                    oModel.setProperty(`/lines/${index}/campaign/repair_status`, "");
-                                    oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 0);
-                                    oModel.setProperty(`/lines/${index}/curr_campaign`, "");
-                                    oModel.setProperty(`/lines/${index}/curr_repair_status`, "");
-                                    oModel.setProperty(`/lines/${index}/curr_minor_repair_status`, 0);
+                        sap.m.MessageBox.confirm(
+                            "Are you sure you want to stop the campaign?",
+                            {
+                                onClose: (sAction) => {
+                                    if (sAction === sap.m.MessageBox.Action.OK) {
+                                        const data = oModel.getData();
+                                        const customer = data.customer;
+                                        const location = data.location;
+                                        const runnerId = data.runnerId;
+                                        const lineName = lineNameInput.getValue();
+
+                                        this._getCampaignNumber(
+                                            customer,
+                                            location,
+                                            runnerId,
+                                            lineName
+                                        )
+                                            .then((campaignNo) => {
+                                                campaignInput.setValue(campaignNo);
+                                                // oModel.setProperty(
+                                                //     `/lines/${index}/campaign/campaign_no`,
+                                                //     campaignNo
+                                                // );
+                                                sap.m.MessageToast.show(
+                                                    `Campaign generated: ${campaignNo}`
+                                                );
+                                                minorRepairInput.setValue(1);
+                                                oModel.setProperty(`/lines/${index}/campaign/minor_repair_count`, 1);
+                                                repairStatusCombo.setSelectedKey('minor');
+                                                oModel.setProperty(`/lines/${index}/campaign/repair_status`, 'minor');
+                                                oModel.refresh(true);
+                                            })
+                                            .catch(() => {
+                                                sap.m.MessageToast.show(
+                                                    "Error generating campaign number"
+                                                );
+                                            });
+                                    }
                                 }
                             }
-                        });
+                        );
                     }
                 });
+
 
                 const repairGrid = new sap.ui.layout.Grid({
                     defaultSpan: "L4 M6 S12",
@@ -1060,10 +1090,10 @@ sap.ui.define([
 
                 oSiteContext.created().then(() => {
 
-                     console.log("Created site object:", oSiteContext.getObject());
-                     let createdSiteId= oSiteContext.getObject().site_id;
-                    sap.m.MessageToast.show("Site created successfully : "+createdSiteId , { 
-                        duration:5000
+                    console.log("Created site object:", oSiteContext.getObject());
+                    let createdSiteId = oSiteContext.getObject().site_id;
+                    sap.m.MessageToast.show("Site created successfully : " + createdSiteId, {
+                        duration: 5000
                     });
 
                     // POST campaigns one by one (same as your AJAX loop)

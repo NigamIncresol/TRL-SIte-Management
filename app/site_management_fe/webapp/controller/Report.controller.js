@@ -364,7 +364,24 @@ sap.ui.define([
                 sap.m.MessageToast.show("Please fill all required fields!");
                 return;
             }
+            // ✅ CLEAR MODEL
+            let oDailyProductionModel = this.getView().getModel("dailyProductionModel");
+            if (oDailyProductionModel) {
+                oDailyProductionModel.setProperty("/reportData", []);
+                oDailyProductionModel.refresh(true);
+            }
 
+            // ✅ DESTROY TABLE IF EXISTS
+            const oOldTable = this.byId("dailyProductionTable");
+            if (oOldTable) {
+                oOldTable.destroy();
+            }
+
+            // ✅ DESTROY BUTTON BOX IF EXISTS
+            const oOldBtnBox = this.byId("dailyProductionBtnBox");
+            if (oOldBtnBox) {
+                oOldBtnBox.destroy();
+            }
             // IST date formatter
             const fnFormatDate = function (d) {
                 const istOffset = 5.5 * 60 * 60 * 1000;
@@ -391,15 +408,16 @@ sap.ui.define([
             oContext.requestObject()
                 .then(function (oResponse) {
                     console.log("API Raw Response:", oResponse);
-                    sap.m.MessageToast.show("Daily Production Data Loaded.");
 
                     const aReportData = oResponse.value || [];
                     console.log("Extracted Pivot Data:", aReportData);
 
                     if (!aReportData.length) {
                         sap.m.MessageToast.show("No data found for selected filters");
+                        return;
 
                     }
+                    sap.m.MessageToast.show("Daily Production Data Loaded.");
 
                     // ✅ reuse named model
                     let oDailyProductionModel = this.getView().getModel("dailyProductionModel");
@@ -692,6 +710,25 @@ sap.ui.define([
                 sap.m.MessageToast.show("Please fill all required fields!");
                 return;
             }
+            // ✅ CLEAR MODEL FIRST
+            let oDailyTemperatureModel = this.getView().getModel("dailyTemperatureModel");
+            if (oDailyTemperatureModel) {
+                oDailyTemperatureModel.setProperty("/temperatureData", []);
+                oDailyTemperatureModel.refresh(true);
+            }
+
+            // ✅ DESTROY OLD TABLE
+            const oOldTable = this.byId("dailyTemperatureTable");
+            if (oOldTable) {
+                oOldTable.destroy();
+            }
+
+            // ✅ DESTROY OLD BUTTON BOX
+            const oOldBtnBox = this.byId("dailyTemperatureBtnBox");
+            if (oOldBtnBox) {
+                oOldBtnBox.destroy();
+            }
+
 
             // IST date formatter
             const fnFormatDate = function (d) {
@@ -900,11 +937,6 @@ sap.ui.define([
 
             oSheet.build().finally(() => oSheet.destroy());
         }
-
-
-
-
-
         , onViewDailyTemperatureChart: function () {
 
             /* =========================
