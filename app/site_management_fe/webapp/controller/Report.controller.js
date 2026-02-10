@@ -364,24 +364,21 @@ sap.ui.define([
                 sap.m.MessageToast.show("Please fill all required fields!");
                 return;
             }
-            // ✅ CLEAR MODEL
+
+            // Clear existing model
             let oDailyProductionModel = this.getView().getModel("dailyProductionModel");
             if (oDailyProductionModel) {
                 oDailyProductionModel.setProperty("/reportData", []);
                 oDailyProductionModel.refresh(true);
             }
 
-            // ✅ DESTROY TABLE IF EXISTS
+            // Destroy old table & button box
             const oOldTable = this.byId("dailyProductionTable");
-            if (oOldTable) {
-                oOldTable.destroy();
-            }
+            if (oOldTable) oOldTable.destroy();
 
-            // ✅ DESTROY BUTTON BOX IF EXISTS
             const oOldBtnBox = this.byId("dailyProductionBtnBox");
-            if (oOldBtnBox) {
-                oOldBtnBox.destroy();
-            }
+            if (oOldBtnBox) oOldBtnBox.destroy();
+
             // IST date formatter
             const fnFormatDate = function (d) {
                 const istOffset = 5.5 * 60 * 60 * 1000;
@@ -415,24 +412,24 @@ sap.ui.define([
                     if (!aReportData.length) {
                         sap.m.MessageToast.show("No data found for selected filters");
                         return;
-
                     }
+
                     sap.m.MessageToast.show("Daily Production Data Loaded.");
 
-                    // ✅ reuse named model
+                    // Reuse or create model
                     let oDailyProductionModel = this.getView().getModel("dailyProductionModel");
                     if (!oDailyProductionModel) {
                         oDailyProductionModel = new sap.ui.model.json.JSONModel({ reportData: [] });
                         this.getView().setModel(oDailyProductionModel, "dailyProductionModel");
                     }
 
-                    // ✅ update data + refresh
+                    // Update data + refresh
                     oDailyProductionModel.setProperty("/reportData", aReportData);
                     oDailyProductionModel.refresh(true);
 
                     const oContainer = this.byId("tableContainer");
 
-                    // ✅ create table ONLY ONCE
+                    // Create table
                     let oTable = this.byId("dailyProductionTable");
                     if (!oTable) {
                         oTable = new sap.ui.table.Table(this.createId("dailyProductionTable"), {
@@ -440,13 +437,15 @@ sap.ui.define([
                             visibleRowCount: 10,
                             selectionMode: "None",
                             width: "100%",
-                            enableColumnResize: false,      // ✅ no column resizing
-                            enableColumnReordering: true    // optional
+                            enableColumnResize: false,
+                            enableColumnReordering: true,
+                            alternateRowColors: true
                         });
 
                         oTable.addStyleClass("sapUiLargeMarginTop");
 
-                        const aKeys = Object.keys(aReportData[0]);
+                        // Collect all unique keys across all rows
+                        const aKeys = [...new Set(aReportData.flatMap(Object.keys))];
                         console.log("Dynamic Column Keys:", aKeys);
 
                         aKeys.forEach(function (sKey) {
@@ -459,14 +458,14 @@ sap.ui.define([
                             oTable.addColumn(new sap.ui.table.Column({
                                 label: new sap.m.Label({ text: sLabel }),
                                 template: new sap.m.Text({ text: `{dailyProductionModel>${sKey}}` }),
-                                resizable: false // ✅ per-column safety
+                                resizable: false
                             }));
                         });
 
                         oContainer.addItem(oTable);
                     }
 
-                    // ✅ create button box ONLY ONCE
+                    // Create button box
                     let oBtnBox = this.byId("dailyProductionBtnBox");
                     if (!oBtnBox) {
                         oBtnBox = new sap.m.HBox(this.createId("dailyProductionBtnBox"), {
@@ -504,10 +503,9 @@ sap.ui.define([
 
 
 
+
         ,
         onViewDailyProductionChart: function () {
-
-            // ✅ Use named production model
             const oModel = this.getView().getModel("dailyProductionModel");
             if (!oModel) {
                 console.warn("dailyProductionModel not found");
@@ -515,77 +513,43 @@ sap.ui.define([
             }
 
             const aReportData = oModel.getProperty("/reportData");
-
             if (!aReportData || !aReportData.length) {
                 console.warn("No report data available");
                 return;
             }
 
-            /* =========================
-               1. DETECT KEYS (DATA-DRIVEN, CASE-INSENSITIVE)
-            ========================= */
-            const aKeys = Object.keys(aReportData[0]);
+            // Collect all unique keys across all rows
+            const aKeys = [...new Set(aReportData.flatMap(Object.keys))];
 
-            const aProdKeys = aKeys.filter(
-                k => k.toLowerCase().endsWith("prod") && k.toLowerCase() !== "totalprod"
-            );
-            const aErosionKeys = aKeys.filter(
-                k => k.toLowerCase().endsWith("erosion")
-            );
-
-            console.log("All keys:", aKeys);
-            console.log("Production keys:", aProdKeys);
-            console.log("Erosion keys:", aErosionKeys);
+            // Identify production and erosion keys (case-insensitive)
+            const aProdKeys = aKeys.filter(k => k.toLowerCase().endsWith("prod") && k.toLowerCase() !== "totalprod");
+            const aErosionKeys = aKeys.filter(k => k.toLowerCase().endsWith("erosion"));
 
             if (!aProdKeys.length && !aErosionKeys.length) {
                 console.warn("No production or erosion keys found");
                 return;
             }
 
-            /* =========================
-               2. LABEL FUNCTION
-            ========================= */
+            // Clean label function: remove symbols, replace underscores, uppercase
             const fnLabel = function (sKey) {
-                return sKey.replace(/_/g, " ").toUpperCase();
+                return sKey.replace(/_/g, " ").replace(/[^a-zA-Z0-9 ]/g, "").toUpperCase();
             };
 
-            /* =========================
-               3. PRODUCTION DATASET
-            ========================= */
+            // Production dataset
             const oProdDataset = new FlattenedDataset({
-                dimensions: [{
-                    name: "Date",
-                    value: "{dailyProductionModel>date}"
-                }],
-                measures: aProdKeys.map(k => ({
-                    name: fnLabel(k),
-                    value: `{dailyProductionModel>${k}}`
-                })),
-                data: {
-                    path: "dailyProductionModel>/reportData"
-                }
+                dimensions: [{ name: "Date", value: "{dailyProductionModel>date}" }],
+                measures: aProdKeys.map(k => ({ name: fnLabel(k), value: `{dailyProductionModel>${k}}` })),
+                data: { path: "dailyProductionModel>/reportData" }
             });
 
-            /* =========================
-               4. EROSION DATASET
-            ========================= */
+            // Erosion dataset
             const oErosionDataset = new FlattenedDataset({
-                dimensions: [{
-                    name: "Date",
-                    value: "{dailyProductionModel>date}"
-                }],
-                measures: aErosionKeys.map(k => ({
-                    name: fnLabel(k),
-                    value: `{dailyProductionModel>${k}}`
-                })),
-                data: {
-                    path: "dailyProductionModel>/reportData"
-                }
+                dimensions: [{ name: "Date", value: "{dailyProductionModel>date}" }],
+                measures: aErosionKeys.map(k => ({ name: fnLabel(k), value: `{dailyProductionModel>${k}}` })),
+                data: { path: "dailyProductionModel>/reportData" }
             });
 
-            /* =========================
-               5. PRODUCTION CHART
-            ========================= */
+            // Production chart
             let oProdChart = null;
             if (aProdKeys.length) {
                 oProdChart = new VizFrame({
@@ -594,34 +558,18 @@ sap.ui.define([
                     height: "250px",
                     dataset: oProdDataset
                 });
-
                 oProdChart.setModel(oModel, "dailyProductionModel");
-
-                oProdChart.addFeed(new FeedItem({
-                    uid: "categoryAxis",
-                    type: "Dimension",
-                    values: ["Date"]
-                }));
-
-                oProdChart.addFeed(new FeedItem({
-                    uid: "valueAxis",
-                    type: "Measure",
-                    values: aProdKeys.map(fnLabel)
-                }));
-
+                oProdChart.addFeed(new FeedItem({ uid: "categoryAxis", type: "Dimension", values: ["Date"] }));
+                oProdChart.addFeed(new FeedItem({ uid: "valueAxis", type: "Measure", values: aProdKeys.map(fnLabel) }));
                 oProdChart.setVizProperties({
                     title: { text: "Production Trend" },
                     plotArea: { dataLabel: { visible: true } },
-                    valueAxis: {
-                        title: { visible: true, text: "Production" }
-                    },
+                    valueAxis: { title: { visible: true, text: "Production" } },
                     legend: { visible: true }
                 });
             }
 
-            /* =========================
-               6. EROSION CHART
-            ========================= */
+            // Erosion chart
             let oErosionChart = null;
             if (aErosionKeys.length) {
                 oErosionChart = new VizFrame({
@@ -630,34 +578,18 @@ sap.ui.define([
                     height: "250px",
                     dataset: oErosionDataset
                 });
-
                 oErosionChart.setModel(oModel, "dailyProductionModel");
-
-                oErosionChart.addFeed(new FeedItem({
-                    uid: "categoryAxis",
-                    type: "Dimension",
-                    values: ["Date"]
-                }));
-
-                oErosionChart.addFeed(new FeedItem({
-                    uid: "valueAxis",
-                    type: "Measure",
-                    values: aErosionKeys.map(fnLabel)
-                }));
-
+                oErosionChart.addFeed(new FeedItem({ uid: "categoryAxis", type: "Dimension", values: ["Date"] }));
+                oErosionChart.addFeed(new FeedItem({ uid: "valueAxis", type: "Measure", values: aErosionKeys.map(fnLabel) }));
                 oErosionChart.setVizProperties({
                     title: { text: "Erosion Trend" },
                     plotArea: { dataLabel: { visible: true } },
-                    valueAxis: {
-                        title: { visible: true, text: "Erosion" }
-                    },
+                    valueAxis: { title: { visible: true, text: "Erosion" } },
                     legend: { visible: true }
                 });
             }
 
-            /* =========================
-               7. COMBINE CHARTS
-            ========================= */
+            // Combine charts
             const items = [];
             if (oProdChart) items.push(oProdChart);
             if (oErosionChart) items.push(oErosionChart);
@@ -669,9 +601,7 @@ sap.ui.define([
 
             const oChartsBox = new sap.m.VBox({ items });
 
-            /* =========================
-               8. SHOW IN DIALOG
-            ========================= */
+            // Show in dialog
             const oDialog = new Dialog({
                 title: "Production & Erosion Trends",
                 contentWidth: "80%",
@@ -690,7 +620,8 @@ sap.ui.define([
             });
 
             oDialog.open();
-        },
+        }
+        ,
         fnFormatDate: function (d) {
             const istOffset = 5.5 * 60 * 60 * 1000;
             return new Date(d.getTime() + istOffset).toISOString().split("T")[0];
@@ -700,7 +631,6 @@ sap.ui.define([
             console.log("=== onFindPressDailyTemperature START ===");
 
             const oODataModel = this.getOwnerComponent().getModel();
-
             const sSiteId = this.byId("siteId").getValue();
             const sProductionLine = this.byId("ProductionLineId1").getValue();
             const dFromDate = this.byId("fromDate").getDateValue();
@@ -710,25 +640,19 @@ sap.ui.define([
                 sap.m.MessageToast.show("Please fill all required fields!");
                 return;
             }
-            // ✅ CLEAR MODEL FIRST
+
+            // CLEAR MODEL
             let oDailyTemperatureModel = this.getView().getModel("dailyTemperatureModel");
             if (oDailyTemperatureModel) {
                 oDailyTemperatureModel.setProperty("/temperatureData", []);
                 oDailyTemperatureModel.refresh(true);
             }
 
-            // ✅ DESTROY OLD TABLE
+            //  DESTROY OLD TABLE AND BUTTON BOX
             const oOldTable = this.byId("dailyTemperatureTable");
-            if (oOldTable) {
-                oOldTable.destroy();
-            }
-
-            // ✅ DESTROY OLD BUTTON BOX
+            if (oOldTable) oOldTable.destroy();
             const oOldBtnBox = this.byId("dailyTemperatureBtnBox");
-            if (oOldBtnBox) {
-                oOldBtnBox.destroy();
-            }
-
+            if (oOldBtnBox) oOldBtnBox.destroy();
 
             // IST date formatter
             const fnFormatDate = function (d) {
@@ -739,8 +663,7 @@ sap.ui.define([
             const sFromDate = fnFormatDate(dFromDate);
             const sToDate = fnFormatDate(dToDate);
 
-            const sFunctionPath =
-                `/getDailyShiftSensorPivot(` +
+            const sFunctionPath = `/getDailyShiftSensorPivot(` +
                 `site_id='${encodeURIComponent(sSiteId)}',` +
                 `productionLineName='${encodeURIComponent(sProductionLine)}',` +
                 `fromDate='${encodeURIComponent(sFromDate)}',` +
@@ -752,26 +675,27 @@ sap.ui.define([
             oContext.requestObject()
                 .then(function (oResponse) {
                     const aData = oResponse.value || [];
-                    sap.m.MessageToast.show("Temperature Data Loaded!");
-
                     if (!aData.length) {
                         sap.m.MessageToast.show("No data found");
+                        return;
                     }
 
-                    // ✅ reuse same named model
+                    sap.m.MessageToast.show("Temperature Data Loaded!");
+
+                    //  reuse named model
                     let oDailyTemperatureModel = this.getView().getModel("dailyTemperatureModel");
                     if (!oDailyTemperatureModel) {
                         oDailyTemperatureModel = new sap.ui.model.json.JSONModel({ temperatureData: [] });
                         this.getView().setModel(oDailyTemperatureModel, "dailyTemperatureModel");
                     }
 
-                    // ✅ update data + refresh
+                    //  update data + refresh
                     oDailyTemperatureModel.setProperty("/temperatureData", aData);
                     oDailyTemperatureModel.refresh(true);
 
                     const oContainer = this.byId("temperatureTableContainer");
 
-                    // ✅ create table ONLY ONCE
+                    //  CREATE TABLE ONLY ONCE
                     let oTable = this.byId("dailyTemperatureTable");
                     if (!oTable) {
                         oTable = new sap.ui.table.Table(this.createId("dailyTemperatureTable"), {
@@ -779,30 +703,35 @@ sap.ui.define([
                             visibleRowCount: 10,
                             selectionMode: "None",
                             width: "100%",
-                            enableColumnResize: false,      // ✅ no column resize
-                            enableColumnReordering: true    // optional (keep/remove as you want)
+                            enableColumnResize: false,
+                            enableColumnReordering: true,
+                            alternateRowColors: true
                         });
 
                         oTable.addStyleClass("sapUiLargeMarginTop");
 
-                        // ✅ create columns once
-                        Object.keys(aData[0]).forEach(function (sKey) {
+                        //  CREATE DYNAMIC COLUMNS USING ALL UNIQUE KEYS
+                        const aKeys = [...new Set(aData.flatMap(Object.keys))];
+                        aKeys.forEach(function (sKey) {
+                            const sLabel = sKey.replace(/_/g, " ")
+                                .replace(/([a-z])([A-Z])/g, "$1 $2")
+                                .replace(/[^a-zA-Z0-9 ]/g, "")
+                                .toUpperCase();
+
                             oTable.addColumn(new sap.ui.table.Column({
-                                label: new sap.m.Label({ text: sKey.replace(/_/g, " ").toUpperCase() }),
+                                label: new sap.m.Label({ text: sLabel }),
                                 template: new sap.m.Text({ text: `{dailyTemperatureModel>${sKey}}` }),
-                                resizable: false              // ✅ extra safety per column
+                                resizable: false
                             }));
                         });
 
                         oContainer.addItem(oTable);
                     }
 
-                    // ✅ create buttons ONLY ONCE
+                    //  CREATE BUTTONS ONLY ONCE
                     let oBtnBox = this.byId("dailyTemperatureBtnBox");
                     if (!oBtnBox) {
-                        oBtnBox = new sap.m.HBox(this.createId("dailyTemperatureBtnBox"), {
-                            alignItems: "Center"
-                        });
+                        oBtnBox = new sap.m.HBox(this.createId("dailyTemperatureBtnBox"), { alignItems: "Center" });
                         oBtnBox.addStyleClass("sapUiSmallMarginTop");
 
                         oBtnBox.addItem(new sap.m.Button(this.createId("viewDailyTemperature"), {
@@ -825,24 +754,19 @@ sap.ui.define([
                     }
 
                     console.log("=== onFindPressDailyTemperature SUCCESS ===");
-
                 }.bind(this))
                 .catch(function (err) {
                     console.error("Temperature API Error:", err);
                     sap.m.MessageToast.show("Error fetching temperature data");
                 });
         }
-        , onExportExcel: function (sReportType, oEvent) {
 
-            // ✅ Use site id safely for file name
+        , onExportExcel: function (sReportType, oEvent) {
+            // Use site id safely for file name
             var sSiteId = this.byId("siteId")?.getValue() || "SITE";
             let aData = null;
 
-            /* =========================
-               1. PICK DATA BASED ON REPORT TYPE OR BUTTON ID
-            ========================= */
-
-            // ---- A) Based on report type (your existing way)
+            // 1. PICK DATA BASED ON REPORT TYPE
             if (sReportType === "PRODUCTION") {
                 const oProdModel = this.getView().getModel("dailyProductionModel");
                 aData = oProdModel?.getProperty("/reportData");
@@ -854,33 +778,25 @@ sap.ui.define([
             } else if (sReportType === "LIFE_AFTER_MAJOR_MINOR") {
                 const oLifeModel = this.getView().getModel("lifeAfterMajorMinorModel");
                 aData = oLifeModel?.getProperty("/reportData");
-            }
-            if (sReportType === "TILT_REPAIR_PRODUCTION") {
+
+            } else if (sReportType === "TILT_REPAIR_PRODUCTION") {
                 const oTiltModel = this.getView().getModel("tiltRepairProductionModel");
                 aData = oTiltModel?.getProperty("/reportData");
+
+            } else if (sReportType === "CAMPAIGNWISE_PRODUCTION") {
+                const oCampModel = this.getView().getModel("campaignwiseProductionModel");
+                aData = oCampModel?.getProperty("/reportData");
             }
 
-            else if (sReportType === "CAMPAIGNWISE_PRODUCTION") {
-                const oCampModel = this.getView().getModel("campaignwiseProductionModel");
-                aData = oCampModel?.getProperty("/reportData");   // keep same path style
-                // If your model stores in different path, change here (ex: "/data")
-            }
-            // ---- B) If report type not passed, pick based on button id (no default creation)
-            // (Useful if you call: press: this.onExportExcel.bind(this) )
+            // 2. fallback based on button id
             if ((!aData || !aData.length) && oEvent) {
                 const sBtnId = oEvent.getSource()?.getId() || "";
-
                 if (sBtnId.includes("exportProduction")) {
-                    const oProdModel = this.getView().getModel("dailyProductionModel");
-                    aData = oProdModel?.getProperty("/reportData");
-
+                    aData = this.getView().getModel("dailyProductionModel")?.getProperty("/reportData");
                 } else if (sBtnId.includes("exportTemperature")) {
-                    const oTempModel = this.getView().getModel("dailyTemperatureModel");
-                    aData = oTempModel?.getProperty("/temperatureData");
-
+                    aData = this.getView().getModel("dailyTemperatureModel")?.getProperty("/temperatureData");
                 } else if (sBtnId.includes("exportLifeAfterMajorMinor")) {
-                    const oLifeModel = this.getView().getModel("lifeAfterMajorMinorModel");
-                    aData = oLifeModel?.getProperty("/reportData");
+                    aData = this.getView().getModel("lifeAfterMajorMinorModel")?.getProperty("/reportData");
                 }
             }
 
@@ -889,10 +805,8 @@ sap.ui.define([
                 return;
             }
 
-            /* =========================
-               2. BUILD COLUMNS DYNAMICALLY
-            ========================= */
-            const aKeys = Object.keys(aData[0]);
+            // 3. BUILD COLUMNS DYNAMICALLY USING ALL UNIQUE KEYS
+            const aKeys = [...new Set(aData.flatMap(Object.keys))];
 
             const aColumns = aKeys.map(sKey => ({
                 label: sKey
@@ -904,31 +818,17 @@ sap.ui.define([
                 type: exportLibrary.EdmType.String
             }));
 
-            /* =========================
-               3. FILE NAME
-            ========================= */
+            // 4. FILE NAME
             const oNow = new Date();
             const aMonths = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-
-            const sDate =
-                ("0" + oNow.getDate()).slice(-2) +
-                aMonths[oNow.getMonth()] +
-                oNow.getFullYear();
-
+            const sDate = ("0" + oNow.getDate()).slice(-2) + aMonths[oNow.getMonth()] + oNow.getFullYear();
             let iHour = oNow.getHours();
             const sAMPM = iHour >= 12 ? "PM" : "AM";
             iHour = iHour % 12 || 12;
-
-            const sTime =
-                iHour + "-" +                      // ✅ avoid ":" in filename (windows safe)
-                ("0" + oNow.getMinutes()).slice(-2) +
-                sAMPM;
-
+            const sTime = iHour + "-" + ("0" + oNow.getMinutes()).slice(-2) + sAMPM;
             const sFileName = `${sReportType || "REPORT"}_REPORT_${sSiteId}_${sDate}_${sTime}.xlsx`;
 
-            /* =========================
-               4. EXPORT
-            ========================= */
+            // 5. EXPORT
             const oSheet = new Spreadsheet({
                 workbook: { columns: aColumns },
                 dataSource: aData,
@@ -937,6 +837,7 @@ sap.ui.define([
 
             oSheet.build().finally(() => oSheet.destroy());
         }
+
         , onViewDailyTemperatureChart: function () {
 
             /* =========================
@@ -1156,23 +1057,23 @@ sap.ui.define([
 
                     if (!aReportData.length) {
                         sap.m.MessageToast.show("No data found for selected filters");
-
+                        return;
                     }
 
-                    // ✅ reuse same named model
+                    //  reuse same named model
                     let oLifeModel = this.getView().getModel("lifeAfterMajorMinorModel");
                     if (!oLifeModel) {
                         oLifeModel = new sap.ui.model.json.JSONModel({ reportData: [] });
                         this.getView().setModel(oLifeModel, "lifeAfterMajorMinorModel");
                     }
 
-                    // ✅ update data + refresh
+                    //  update data + refresh
                     oLifeModel.setProperty("/reportData", aReportData);
                     oLifeModel.refresh(true);
 
                     const oContainer = this.byId("lifeAfterMajorMinorContainer");
 
-                    // ✅ create table ONLY ONCE
+                    //  create table ONLY ONCE
                     let oTable = this.byId("lifeAfterMajorMinorTable");
                     if (!oTable) {
                         oTable = new sap.ui.table.Table(this.createId("lifeAfterMajorMinorTable"), {
@@ -1181,12 +1082,15 @@ sap.ui.define([
                             selectionMode: "None",
                             width: "100%",
                             enableColumnReordering: true,
-                            enableColumnResize: false
+                            enableColumnResize: false,
+                            fixedRowHeight: false,
+                            rowHeight: 0,
+                            alternateRowColors: true
                         });
 
                         oTable.addStyleClass("sapUiLargeMarginTop");
 
-                        // create columns once (based on first response)
+                        //  create columns ONCE with HEADER TOOLTIP
                         Object.keys(aReportData[0]).forEach(function (sKey) {
                             const sLabel = sKey
                                 .replace(/_/g, " ")
@@ -1194,17 +1098,27 @@ sap.ui.define([
                                 .replace(/[^a-zA-Z0-9 ]/g, "")
                                 .toUpperCase();
 
+                            const oHeaderLabel = new sap.m.Label({
+                                text: sLabel,
+                                tooltip: sLabel   //  header tooltip
+                            });
+
                             oTable.addColumn(new sap.ui.table.Column({
-                                label: new sap.m.Label({ text: sLabel }),
-                                template: new sap.m.Text({ text: `{lifeAfterMajorMinorModel>${sKey}}` }),
-                                resizable: false
+                                label: oHeaderLabel,
+                                width: "12rem",
+                                resizable: false,
+                                template: new sap.m.Text({
+                                    text: `{lifeAfterMajorMinorModel>${sKey}}`,
+                                    wrapping: true,
+                                    maxLines: 0
+                                })
                             }));
                         });
 
                         oContainer.addItem(oTable);
                     }
 
-                    // ✅ create Export button ONLY ONCE
+                    //  create Export button ONLY ONCE
                     let oExportBtn = this.byId("exportLifeAfterMajorMinor");
                     if (!oExportBtn) {
                         const oButtonBox = new sap.m.HBox({ alignItems: "Center" });
@@ -1227,6 +1141,8 @@ sap.ui.define([
                     sap.m.MessageToast.show("Error fetching data from API");
                 });
         }
+
+
 
         , onFindPressCampaignwiseProduction: function () {
             console.log("=== onFindPressCampaignwiseProduction START ===");
@@ -1305,7 +1221,8 @@ sap.ui.define([
                             selectionMode: "None",
                             width: "100%",
                             enableColumnReordering: true,
-                            enableColumnResize: false
+                            enableColumnResize: false,
+                            alternateRowColors: true
                         });
                         oTable.addStyleClass("sapUiLargeMarginTop");
 
@@ -1426,7 +1343,8 @@ sap.ui.define([
                             selectionMode: "None",
                             width: "100%",
                             enableColumnReordering: true,
-                            enableColumnResize: false
+                            enableColumnResize: false,
+                            alternateRowColors: true
                         });
                         oTable.addStyleClass("sapUiLargeMarginTop");
 

@@ -218,7 +218,7 @@
             </content>
         </Panel>
 
-        <Panel
+        <!-- <Panel
             headerText="Campaign Wise Production"
             class="whiteCard"
             expandable="true"
@@ -230,7 +230,7 @@
                     justifyContent="Start"
                     class="sapUiSmallMarginBottom"
                 >
-                    <!-- Find Button -->
+                    
                     <VBox
                         width="20%"
                         class="sapUiSmallMarginEnd"
@@ -243,7 +243,7 @@
                         />
                     </VBox>
 
-                    <!-- Info Message -->
+                    
                     <VBox width="60%">
                         <tnt:InfoLabel
                             text="Required fields: Site ID, Runner, To Date/End Date"
@@ -252,14 +252,14 @@
                     </VBox>
                 </HBox>
 
-                <!-- Result Container -->
+               
                 <VBox
                     id="campaignwiseProductionContainer"
                     width="100%"
                     class="sapUiSmallMarginTop"
                 />
             </content>
-        </Panel>
+        </Panel> -->
         <Panel
             headerText="Tilt Repair (TR) Production"
             class="whiteCard"
